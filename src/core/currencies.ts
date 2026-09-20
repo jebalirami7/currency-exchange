@@ -3,15 +3,16 @@ import type { Currency, CurrencyCode } from './types';
 /**
  * The single source of truth for supported currencies.
  *
- * To support another currency, add one entry here — the selectors, the rate
- * table, the formatter and the providers all derive from this list. Symbols
- * and decimal precision are not configured: `Intl` already knows them for
- * every ISO 4217 code, and duplicating that here would only let it drift.
+ * To support another currency, add one entry here — the fields, the rate
+ * summary, the formatter and the providers all derive from this list.
+ *
+ * `decimals` is how many decimal places the currency is quoted to in practice:
+ * none for the rupiah, two for the dollar, three for the dinar.
  */
 export const CURRENCIES: readonly Currency[] = [
-  { code: 'IDR', name: 'Indonesian Rupiah', flag: '🇮🇩' },
-  { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
-  { code: 'TND', name: 'Tunisian Dinar', flag: '🇹🇳' },
+  { code: 'IDR', name: 'Indonesian Rupiah', decimals: 0, flag: '🇮🇩' },
+  { code: 'USD', name: 'US Dollar', decimals: 2, flag: '🇺🇸' },
+  { code: 'TND', name: 'Tunisian Dinar', decimals: 3, flag: '🇹🇳' },
 ];
 
 /** Field that holds the amount on first load. */

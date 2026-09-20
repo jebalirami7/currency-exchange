@@ -15,7 +15,7 @@ direction to pick and no pair to swap.
 Add one entry to `CURRENCIES` in [`src/core/currencies.ts`](src/core/currencies.ts):
 
 ```ts
-{ code: 'EUR', name: 'Euro', flag: '🇪🇺' },
+{ code: 'EUR', name: 'Euro', decimals: 2, flag: '🇪🇺' },
 ```
 
 That is the whole change. The fields, the rate summary, the rate requests and

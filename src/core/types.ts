@@ -4,8 +4,14 @@ export type CurrencyCode = string;
 export interface Currency {
   /** ISO 4217 alphabetic code. Used as the key everywhere. */
   readonly code: CurrencyCode;
-  /** Full English name, shown in the selector and the rate table. */
+  /** Full English name, shown beside the code. */
   readonly name: string;
+  /**
+   * Decimal places the currency is quoted to. Stated here rather than taken
+   * from `Intl`, whose currency data disagrees across engines — Chromium
+   * gives the rupiah two decimals, Node gives it none.
+   */
+  readonly decimals: number;
   /** Regional indicator flag, purely decorative. */
   readonly flag: string;
 }

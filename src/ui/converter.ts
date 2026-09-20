@@ -77,7 +77,7 @@ export class Converter {
     if (!row) return;
 
     this.#setSource(code);
-    this.#amount = parseAmount(row.input.value);
+    this.#amount = parseAmount(row.input.value, code);
     this.#error.hidden = row.input.value.trim() === '' || this.#amount !== null;
 
     this.#render();
