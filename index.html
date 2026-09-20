@@ -8,6 +8,7 @@
       name="description"
       content="Convert between Indonesian Rupiah, US Dollar and Tunisian Dinar at live exchange rates."
     />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#0b1020" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
@@ -15,21 +16,26 @@
   <body>
     <main class="card">
       <header class="card__header">
-        <h1 class="card__title">Currency Exchange</h1>
-        <p class="card__subtitle">Type in any currency to see the others.</p>
+        <div>
+          <h1 class="card__title">Currency Exchange</h1>
+          <p class="card__subtitle">Type in any currency — the rest follow.</p>
+        </div>
+
+        <button class="refresh" id="refresh" type="button" aria-label="Refresh rates">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+            <path d="M20 4v4.5h-4.5" />
+          </svg>
+        </button>
       </header>
 
       <div class="rows" id="rows"></div>
 
-      <p class="field__error" id="amount-error" role="alert" hidden>
-        Enter a valid amount.
-      </p>
-
-      <p class="rate" id="rate" aria-live="polite">Loading rates…</p>
+      <p class="error" id="amount-error" role="alert" hidden>Enter a valid amount.</p>
 
       <footer class="card__footer">
-        <p class="status" id="status">Connecting…</p>
-        <button class="refresh" id="refresh" type="button">Refresh</button>
+        <p class="status" id="status" data-tone="loading" aria-live="polite">Loading rates…</p>
+        <p class="status__detail" id="status-detail"></p>
       </footer>
     </main>
 

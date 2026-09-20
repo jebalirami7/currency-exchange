@@ -36,6 +36,13 @@ static site is public anyway.
 | 1 | [open.er-api.com](https://open.er-api.com) | Keyless, covers IDR, USD and TND. Updates daily. |
 | 2 | [frankfurter.app](https://frankfurter.app) | ECB reference rates. Does **not** quote TND, so it only serves requests it can fully satisfy. |
 
+**How often rates change:** open.er-api.com publishes once every 24 hours, so
+the app is a live lookup of daily-published rates rather than a ticking feed.
+It checks for a new snapshot every 10 minutes (and on tab focus, on regaining
+connectivity, and on Refresh), and shows both when the rates were published
+and when the next publication is due. Minute-level rates would need a paid
+provider.
+
 The [`RateService`](src/rates/rate-service.ts) tries each provider in order and
 takes the first snapshot that covers *every* supported currency; partial
 coverage is treated as a failure so the next provider gets a turn. A snapshot

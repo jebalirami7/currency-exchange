@@ -8,6 +8,7 @@ interface StoredSnapshot {
   rates: Record<string, number>;
   updatedAt: string;
   fetchedAt: string;
+  nextUpdateAt?: string;
   provider: string;
 }
 
@@ -40,11 +41,14 @@ export function readCachedSnapshot(): RateSnapshot | null {
       return null;
     }
 
+    const nextUpdateAt = stored.nextUpdateAt ? new Date(stored.nextUpdateAt) : undefined;
+
     return {
       base: stored.base,
       rates: stored.rates,
       updatedAt,
       fetchedAt,
+      ...(nextUpdateAt && !Number.isNaN(nextUpdateAt.getTime()) ? { nextUpdateAt } : {}),
       provider: stored.provider,
     };
   } catch {
@@ -53,17 +57,21 @@ export function readCachedSnapshot(): RateSnapshot | null {
 }
 
 export function writeCachedSnapshot(snapshot: RateSnapshot): void {
-  const stored: StoredSnapshot = {
-    base: snapshot.base,
-    rates: { ...snapshot.rates },
-    updatedAt: snapshot.updatedAt.toISOString(),
-    fetchedAt: snapshot.fetchedAt.toISOString(),
-    provider: snapshot.provider,
-  };
-
   try {
+    const stored: StoredSnapshot = {
+      base: snapshot.base,
+      rates: { ...snapshot.rates },
+      // `toISOString` throws on a date a provider gave us in a bad format,
+      // so serialising belongs inside the guard alongside the storage call.
+      updatedAt: snapshot.updatedAt.toISOString(),
+      fetchedAt: snapshot.fetchedAt.toISOString(),
+      ...(snapshot.nextUpdateAt ? { nextUpdateAt: snapshot.nextUpdateAt.toISOString() } : {}),
+      provider: snapshot.provider,
+    };
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   } catch {
-    // Storage unavailable or full — the in-memory snapshot still works.
+    // Unusable timestamp, or storage unavailable or full — either way the
+    // in-memory snapshot still works.
   }
 }

@@ -3,13 +3,16 @@ import { CURRENCIES, DEFAULT_CURRENCY } from '../core/currencies';
 import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
-import { createAmountRow } from './amount-row';
+import { createAmountRow, type AmountRow } from './amount-row';
 import { requireElement } from './dom';
 
 /** How often rates are refreshed in the background while the tab is open. */
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
-type StatusTone = 'info' | 'warning' | 'error';
+/** How long a changed value stays highlighted. Matches the CSS animation. */
+const FLASH_MS = 700;
+
+type StatusTone = 'loading' | 'live' | 'warning' | 'error';
 
 /**
  * Every currency gets its own field, and they all hold the same value at once.
@@ -18,11 +21,11 @@ type StatusTone = 'info' | 'warning' | 'error';
  */
 export class Converter {
   readonly #rates: RateService;
-  readonly #inputs = new Map<CurrencyCode, HTMLInputElement>();
+  readonly #cells = new Map<CurrencyCode, AmountRow>();
 
-  readonly #rows = requireElement('#rows');
-  readonly #rate = requireElement('#rate');
+  readonly #list = requireElement('#rows');
   readonly #status = requireElement('#status');
+  readonly #detail = requireElement('#status-detail');
   readonly #error = requireElement('#amount-error');
   readonly #refresh = requireElement<HTMLButtonElement>('#refresh');
 
@@ -38,16 +41,20 @@ export class Converter {
   /** Builds the fields, wires events and loads the first snapshot. */
   async start(): Promise<void> {
     for (const currency of CURRENCIES) {
-      const { root, input } = createAmountRow(currency);
-      input.addEventListener('input', () => this.#onInput(currency.code));
-      input.addEventListener('focus', () => input.select());
+      const row = createAmountRow(currency);
+      row.input.addEventListener('input', () => this.#onInput(currency.code));
+      row.input.addEventListener('focus', () => {
+        this.#setSource(currency.code);
+        row.input.select();
+      });
 
-      this.#inputs.set(currency.code, input);
-      this.#rows.append(root);
+      this.#cells.set(currency.code, row);
+      this.#list.append(row.root);
     }
 
-    const sourceInput = this.#inputs.get(this.#source);
-    if (sourceInput) sourceInput.value = '1';
+    const source = this.#cells.get(this.#source);
+    if (source) source.input.value = '1';
+    this.#markSource();
 
     this.#refresh.addEventListener('click', () => void this.#load({ force: true }));
 
@@ -66,32 +73,46 @@ export class Converter {
   }
 
   #onInput(code: CurrencyCode): void {
-    const input = this.#inputs.get(code);
-    if (!input) return;
+    const row = this.#cells.get(code);
+    if (!row) return;
 
-    this.#source = code;
-    this.#amount = parseAmount(input.value);
-    this.#error.hidden = input.value.trim() === '' || this.#amount !== null;
+    this.#setSource(code);
+    this.#amount = parseAmount(row.input.value);
+    this.#error.hidden = row.input.value.trim() === '' || this.#amount !== null;
 
     this.#render();
   }
 
+  /** Focusing a field hands it the lead, so the rest read as derived from it. */
+  #setSource(code: CurrencyCode): void {
+    if (this.#source === code) return;
+
+    this.#source = code;
+    this.#markSource();
+    this.#render();
+  }
+
+  #markSource(): void {
+    for (const [code, row] of this.#cells) {
+      row.root.classList.toggle('row--source', code === this.#source);
+    }
+  }
+
   async #load({ force = false } = {}): Promise<void> {
     this.#refresh.disabled = true;
+    if (!this.#snapshot) this.#setStatus('Loading rates…', '', 'loading');
 
     try {
       const { snapshot, stale } = await this.#rates.getRates({ force });
       this.#snapshot = snapshot;
       this.#render();
-
-      this.#setStatus(
-        stale
-          ? 'Offline — showing the last rates received.'
-          : `${snapshot.provider} · updated ${formatRelativeTime(snapshot.updatedAt)}`,
-        stale ? 'warning' : 'info',
-      );
+      this.#renderStatus(snapshot, stale);
     } catch {
-      this.#setStatus('Could not load exchange rates. Check your connection.', 'error');
+      this.#setStatus(
+        'Could not load rates',
+        'Check your connection, then try again.',
+        'error',
+      );
     } finally {
       this.#refresh.disabled = false;
     }
@@ -101,34 +122,56 @@ export class Converter {
     const snapshot = this.#snapshot;
     if (!snapshot) return;
 
-    for (const [code, input] of this.#inputs) {
+    for (const [code, row] of this.#cells) {
+      const isSource = code === this.#source;
+      row.rate.textContent = isSource
+        ? ''
+        : `× ${formatRate(getRate(snapshot, this.#source, code))}`;
+
       // Never overwrite what the user is editing, or a field they are sitting
       // in — a background refresh would otherwise move the caret out from
       // under them.
-      if (code === this.#source || input === document.activeElement) continue;
+      if (isSource || row.input === document.activeElement) continue;
 
-      input.value =
+      const next =
         this.#amount === null
           ? ''
           : formatAmount(convert(this.#amount, snapshot, this.#source, code), code);
+
+      if (row.input.value !== next) {
+        row.input.value = next;
+        this.#flash(row);
+      }
+    }
+  }
+
+  /** Briefly highlights a value that just changed, so the update is visible. */
+  #flash(row: AmountRow): void {
+    row.root.classList.remove('row--changed');
+    // Force a reflow so re-adding the class restarts the animation.
+    void row.root.offsetWidth;
+    row.root.classList.add('row--changed');
+    window.setTimeout(() => row.root.classList.remove('row--changed'), FLASH_MS);
+  }
+
+  #renderStatus(snapshot: RateSnapshot, stale: boolean): void {
+    const published = `Updated ${formatRelativeTime(snapshot.updatedAt)}`;
+    const next = snapshot.nextUpdateAt
+      ? `next ${formatRelativeTime(snapshot.nextUpdateAt)}`
+      : null;
+    const detail = [snapshot.provider, next].filter(Boolean).join(' · ');
+
+    if (stale) {
+      this.#setStatus('Offline', `Showing rates from ${formatRelativeTime(snapshot.updatedAt)}.`, 'warning');
+      return;
     }
 
-    this.#renderRate(snapshot);
+    this.#setStatus(published, detail, 'live');
   }
 
-  /** A one-line summary of what the source currency is worth, e.g.
-   * `1 USD = 16,238.5 IDR · 2.9117 TND`. */
-  #renderRate(snapshot: RateSnapshot): void {
-    const quotes = CURRENCIES.filter((currency) => currency.code !== this.#source).map(
-      (currency) =>
-        `${formatRate(getRate(snapshot, this.#source, currency.code))} ${currency.code}`,
-    );
-
-    this.#rate.textContent = `1 ${this.#source} = ${quotes.join(' · ')}`;
-  }
-
-  #setStatus(message: string, tone: StatusTone): void {
+  #setStatus(message: string, detail: string, tone: StatusTone): void {
     this.#status.textContent = message;
+    this.#detail.textContent = detail;
     this.#status.dataset['tone'] = tone;
   }
 }

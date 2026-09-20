@@ -21,6 +21,11 @@ export interface RateSnapshot {
   readonly updatedAt: Date;
   /** When this client retrieved the snapshot. Drives cache freshness. */
   readonly fetchedAt: Date;
+  /**
+   * When the provider will publish again, when it says so. Rates are published
+   * daily, so showing this is more honest than implying they tick live.
+   */
+  readonly nextUpdateAt?: Date;
   /** Identifier of the provider the snapshot came from. */
   readonly provider: string;
 }

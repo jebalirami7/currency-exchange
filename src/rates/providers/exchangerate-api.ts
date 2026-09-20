@@ -4,6 +4,7 @@ import { fetchJson, selectRates } from './http';
 interface Payload {
   readonly result: string;
   readonly time_last_update_unix?: number;
+  readonly time_next_update_unix?: number;
   readonly rates?: Record<string, number>;
 }
 
@@ -37,6 +38,9 @@ export const exchangerateApi: RateProvider = {
         ? new Date(payload.time_last_update_unix * 1000)
         : new Date(),
       fetchedAt: new Date(),
+      ...(payload.time_next_update_unix
+        ? { nextUpdateAt: new Date(payload.time_next_update_unix * 1000) }
+        : {}),
       provider: exchangerateApi.name,
     };
   },
