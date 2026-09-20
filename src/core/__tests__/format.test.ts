@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../format';
+import {
+  formatAmount,
+  formatRate,
+  formatRelativeTime,
+  groupWhileTyping,
+  parseAmount,
+} from '../format';
 
 describe('parseAmount', () => {
   it('parses plain numbers', () => {
@@ -37,11 +43,15 @@ describe('parseAmount', () => {
     expect(parseAmount('12.34', 'USD')).toBe(12.34);
   });
 
-  it('rejects empty, negative and non-numeric input', () => {
+  it('rejects input with no number in it', () => {
     expect(parseAmount('', 'USD')).toBeNull();
     expect(parseAmount('   ', 'USD')).toBeNull();
     expect(parseAmount('abc', 'USD')).toBeNull();
-    expect(parseAmount('-5', 'USD')).toBeNull();
+    expect(parseAmount('.', 'USD')).toBeNull();
+  });
+
+  it('drops a minus sign, since an amount to convert is never negative', () => {
+    expect(parseAmount('-5', 'USD')).toBe(5);
   });
 });
 
@@ -99,5 +109,46 @@ describe('formatRelativeTime', () => {
 
   it('describes seconds ago', () => {
     expect(formatRelativeTime(new Date('2026-01-01T11:59:58Z'), now)).toBe('2 seconds ago');
+  });
+});
+
+describe('groupWhileTyping', () => {
+  it('groups digits as a long figure is entered', () => {
+    expect(groupWhileTyping('2500000', 'IDR')).toBe('2,500,000');
+    expect(groupWhileTyping('16239', 'IDR')).toBe('16,239');
+    expect(groupWhileTyping('999', 'IDR')).toBe('999');
+  });
+
+  it('leaves a decimal point being typed alone', () => {
+    expect(groupWhileTyping('1234.', 'USD')).toBe('1,234.');
+    expect(groupWhileTyping('1234.5', 'USD')).toBe('1,234.5');
+  });
+
+  it('normalises a typed comma to a point, so one mark never does both jobs', () => {
+    expect(groupWhileTyping('1234,5', 'USD')).toBe('1,234.5');
+    expect(groupWhileTyping('2,912', 'TND')).toBe('2.912');
+  });
+
+  it('regroups digits already separated another way', () => {
+    expect(groupWhileTyping('2.500.000', 'IDR')).toBe('2,500,000');
+    expect(groupWhileTyping('2,500,000', 'IDR')).toBe('2,500,000');
+  });
+
+  it('refuses anything that is not part of a number', () => {
+    expect(groupWhileTyping('abc', 'USD')).toBe('');
+    expect(groupWhileTyping('12ab34', 'USD')).toBe('1,234');
+  });
+
+  it('agrees with parseAmount about where the decimal point falls', () => {
+    for (const [typed, code] of [
+      ['2500000', 'IDR'],
+      ['2.500.000', 'IDR'],
+      ['2,912', 'TND'],
+      ['1234,5', 'USD'],
+      ['0.500', 'USD'],
+    ] as const) {
+      const shown = groupWhileTyping(typed, code);
+      expect(parseAmount(shown, code)).toBe(parseAmount(typed, code));
+    }
   });
 });

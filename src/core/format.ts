@@ -102,6 +102,79 @@ export function formatRelativeTime(date: Date, now: Date = new Date()): string {
 }
 
 /**
+ * Splits a cleaned amount into its integer digits and, where the input has a
+ * decimal point at all, the digits after it.
+ *
+ * Both the parser and the as-you-type grouping go through here, so what a
+ * field shows and what it is worth can never disagree about where the
+ * decimal point falls.
+ */
+function splitAmount(
+  cleaned: string,
+  code: CurrencyCode,
+): { integer: string; fraction: string | null } {
+  const decimals = currencyPrecision(code);
+  const lastSeparator = Math.max(cleaned.lastIndexOf('.'), cleaned.lastIndexOf(','));
+
+  // Nothing can follow a decimal point in a currency that has no decimal
+  // places, and a string without a separator has no fraction either.
+  if (lastSeparator === -1 || decimals === 0) {
+    return { integer: onlyDigits(cleaned), fraction: null };
+  }
+
+  const integer = onlyDigits(cleaned.slice(0, lastSeparator));
+  const fraction = onlyDigits(cleaned.slice(lastSeparator + 1));
+
+  return marksGrouping(integer, fraction, decimals)
+    ? { integer: integer + fraction, fraction: null }
+    : { integer, fraction };
+}
+
+/**
+ * Whether the last separator groups thousands rather than marking decimals.
+ *
+ * More digits follow it than the currency has decimal places — so `1,500`
+ * dollars is fifteen hundred, while `1,50` is a dollar fifty and `2,912`
+ * dinars, quoted to three, is just under three. Grouping also never starts a
+ * number with zero, which keeps `0,500` a fraction.
+ *
+ * The digit count is what lets a figure regroup as it is typed: adding a
+ * digit to `2,500` gives `2,5000`, whose four trailing digits can only be
+ * grouping mid-entry.
+ */
+function marksGrouping(integer: string, fraction: string, decimals: number): boolean {
+  if (integer === '' || integer.startsWith('0')) return false;
+  return fraction.length > decimals;
+}
+
+function onlyDigits(text: string): string {
+  return text.replace(/\D/g, '');
+}
+
+/** Digits and separators only; spaces, signs and symbols are dropped. */
+function clean(input: string): string {
+  return input.trim().replace(/[^\d.,]/g, '');
+}
+
+/**
+ * Regroups an amount as it is being typed, so a long figure stays readable
+ * while it is entered rather than only once it is converted.
+ *
+ * The decimal point is normalised to `.` so that one field never shows commas
+ * doing both jobs at once, and anything that is not a digit or a separator is
+ * dropped, which is how a letter gets refused.
+ */
+export function groupWhileTyping(input: string, code: CurrencyCode): string {
+  const cleaned = clean(input);
+  if (cleaned === '') return '';
+
+  const { integer, fraction } = splitAmount(cleaned, code);
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return fraction === null ? grouped : `${grouped}.${fraction}`;
+}
+
+/**
  * Parses an amount the user typed into a field holding `code`, tolerating
  * thousands separators and both decimal conventions. Returns `null` for
  * anything that is not a usable non-negative amount.
@@ -112,43 +185,11 @@ export function formatRelativeTime(date: Date, now: Date = new Date()): string {
  * amount; the rupiah has none, so `16,239` in an IDR field is thousands.
  */
 export function parseAmount(input: string, code: CurrencyCode): number | null {
-  const trimmed = input.trim();
-  if (trimmed === '') return null;
-
-  // Keep digits, separators and a leading sign; drop spaces and symbols.
-  const cleaned = trimmed.replace(/[^\d.,-]/g, '');
+  const cleaned = clean(input);
   if (cleaned === '') return null;
 
-  // Whichever separator comes last would be the decimal point, if there is one.
-  const decimal = cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.') ? ',' : '.';
-  const withoutOther = cleaned.split(decimal === ',' ? '.' : ',').join('');
-  const parts = withoutOther.split(decimal);
+  const { integer, fraction } = splitAmount(cleaned, code);
+  const value = Number(fraction === null ? integer : `${integer}.${fraction}`);
 
-  const digits = isGrouped(withoutOther, decimal, parts, code)
-    ? parts.join('')
-    : parts.join('.');
-
-  const value = Number(digits);
   return Number.isFinite(value) && value >= 0 ? value : null;
-}
-
-/** Whether the separators in `text` group thousands rather than mark decimals. */
-function isGrouped(
-  text: string,
-  decimal: string,
-  parts: readonly string[],
-  code: CurrencyCode,
-): boolean {
-  // A separator that repeats can only be grouping: `1,000,000`.
-  if (parts.length > 2) return true;
-
-  const fraction = parts[1];
-  if (fraction === undefined) return false;
-
-  // Grouping is three digits at a time, and never starts a number with zero,
-  // which keeps `0.500` a decimal.
-  if (!new RegExp(`^[1-9]\\d{0,2}(\\${decimal}\\d{3})+$`).test(text)) return false;
-
-  // ...but three digits is also exactly how the dinar is quoted.
-  return fraction.length !== currencyPrecision(code);
 }

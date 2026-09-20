@@ -4,6 +4,7 @@ import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../co
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
 import { createAmountRow, type AmountRow } from './amount-row';
+import { regroup, selectOnFirstTap } from './amount-input';
 import { requireElement } from './dom';
 
 /** How often rates are refreshed in the background while the tab is open. */
@@ -49,9 +50,9 @@ export class Converter {
     for (const currency of CURRENCIES) {
       const row = createAmountRow(currency);
       row.input.addEventListener('input', () => this.#onInput(currency.code));
+      selectOnFirstTap(row.input);
       row.input.addEventListener('focus', () => {
         this.#takeOver(currency.code);
-        row.input.select();
         // Only scrolls if the keyboard has pushed this row out of view.
         row.root.scrollIntoView({ block: 'nearest' });
       });
@@ -83,6 +84,8 @@ export class Converter {
   #onInput(code: CurrencyCode): void {
     const row = this.#cells.get(code);
     if (!row) return;
+
+    regroup(row.input, code);
 
     this.#source = code;
     this.#markSource();

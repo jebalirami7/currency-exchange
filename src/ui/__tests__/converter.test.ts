@@ -73,15 +73,21 @@ describe('Converter', () => {
     expect(Number(values()['USD'])).toBeCloseTo(61.58, 2);
   });
 
-  it('clears the other fields when the amount is not usable', async () => {
+  it('refuses characters that are not part of a number', async () => {
     await mount();
 
     type('USD', 'abc');
-    expect(values()).toEqual({ USD: 'abc', IDR: '', TND: '' });
-    expect(document.querySelector<HTMLElement>('#amount-error')?.hidden).toBe(false);
+    expect(values()).toEqual({ USD: '', IDR: '', TND: '' });
 
     type('USD', '2');
     expect(values()['IDR']).toBe('32,477');
-    expect(document.querySelector<HTMLElement>('#amount-error')?.hidden).toBe(true);
+  });
+
+  it('groups the digits in the field being typed into', async () => {
+    await mount();
+
+    type('IDR', '2500000');
+    expect(values()['IDR']).toBe('2,500,000');
+    expect(Number(values()['USD'])).toBeCloseTo(153.96, 2);
   });
 });
