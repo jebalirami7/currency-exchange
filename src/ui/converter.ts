@@ -185,6 +185,14 @@ export class Converter {
       row.input.focus({ preventScroll: true });
     }
 
+    if (key === 'clear') {
+      this.#replacing = false;
+      row.input.value = '';
+      row.input.setSelectionRange(0, 0);
+      this.#onInput(this.#source);
+      return;
+    }
+
     // The first key after taking a field over starts the amount again, the
     // way typing over a selection would — except backspace, which trims a
     // digit off the amount rather than throwing all of it away.

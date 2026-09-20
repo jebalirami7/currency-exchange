@@ -1,5 +1,5 @@
-/** The key a press reports: a character to insert, or a deletion. */
-export type KeypadKey = string | 'backspace';
+/** The key a press reports: a character to insert, a deletion, or a reset. */
+export type KeypadKey = 'backspace' | 'clear' | (string & {});
 
 export interface Keypad {
   readonly root: HTMLElement;
@@ -20,7 +20,11 @@ export function createKeypad(press: (key: KeypadKey) => void): Keypad {
   root.setAttribute('aria-label', 'Number pad');
 
   const decimal = key('.', '.', 'Decimal point');
+  const clear = key('clear', 'Clear', 'Clear the amount');
+  clear.classList.add('keypad__key--wide', 'keypad__key--utility');
+
   const keys = [
+    clear,
     ...DIGITS.map((digit) => key(digit, digit)),
     decimal,
     key('0', '0'),

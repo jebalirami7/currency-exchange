@@ -425,6 +425,22 @@ body {
   user-select: none;
 }
 
+/* Sits across the top, away from the digits, so it is not caught by a thumb
+   aiming for one. */
+.keypad__key--wide {
+  grid-column: 1 / -1;
+}
+
+.keypad__key--utility {
+  color: var(--ink-muted);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: clamp(8px, 1.4vh, 13px) 0;
+}
+
 .keypad__key:hover:not(:disabled),
 .keypad__key:active:not(:disabled) {
   background: var(--accent-wash);
