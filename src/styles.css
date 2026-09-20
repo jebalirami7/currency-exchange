@@ -152,9 +152,14 @@ body {
     border-color 120ms ease;
 }
 
-.tool:hover:not(:disabled) {
-  color: var(--accent);
-  border-color: var(--rule-strong);
+/* A touch screen has no hover, but it fakes one on tap and then leaves it
+   stuck on the last thing pressed. Asking for a device that really hovers
+   keeps that off a phone. */
+@media (hover: hover) {
+  .tool:hover:not(:disabled) {
+    color: var(--accent);
+    border-color: var(--rule-strong);
+  }
 }
 
 .tool:disabled {
@@ -441,9 +446,16 @@ body {
   padding: clamp(8px, 1.4vh, 13px) 0;
 }
 
-.keypad__key:hover:not(:disabled),
+/* `:active` lasts only while the key is held, so it is the right feedback
+   for a finger; hover is for a pointer that can rest somewhere. */
 .keypad__key:active:not(:disabled) {
   background: var(--accent-wash);
+}
+
+@media (hover: hover) {
+  .keypad__key:hover:not(:disabled) {
+    background: var(--accent-wash);
+  }
 }
 
 .keypad__key:disabled {
