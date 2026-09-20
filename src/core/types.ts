@@ -12,8 +12,6 @@ export interface Currency {
    * gives the rupiah two decimals, Node gives it none.
    */
   readonly decimals: number;
-  /** Regional indicator flag, purely decorative. */
-  readonly flag: string;
 }
 
 /**

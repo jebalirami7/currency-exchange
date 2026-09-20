@@ -10,9 +10,9 @@ import type { Currency, CurrencyCode } from './types';
  * none for the rupiah, two for the dollar, three for the dinar.
  */
 export const CURRENCIES: readonly Currency[] = [
-  { code: 'IDR', name: 'Indonesian Rupiah', decimals: 0, flag: '🇮🇩' },
-  { code: 'USD', name: 'US Dollar', decimals: 2, flag: '🇺🇸' },
-  { code: 'TND', name: 'Tunisian Dinar', decimals: 3, flag: '🇹🇳' },
+  { code: 'IDR', name: 'Indonesian Rupiah', decimals: 0 },
+  { code: 'USD', name: 'US Dollar', decimals: 2 },
+  { code: 'TND', name: 'Tunisian Dinar', decimals: 3 },
 ];
 
 /** Field that holds the amount on first load. */

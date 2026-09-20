@@ -52,6 +52,8 @@ export class Converter {
       row.input.addEventListener('focus', () => {
         this.#takeOver(currency.code);
         row.input.select();
+        // Only scrolls if the keyboard has pushed this row out of view.
+        row.root.scrollIntoView({ block: 'nearest' });
       });
 
       this.#cells.set(currency.code, row);

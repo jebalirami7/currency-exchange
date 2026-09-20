@@ -8,6 +8,11 @@ Every currency has its own field and they all hold the same value at once: type
 an amount into any one of them and the rest update as you type. There is no
 direction to pick and no pair to swap.
 
+The layout is anchored to the top of the visible viewport rather than centred
+in it, and reads that viewport from `visualViewport` — iOS Safari shrinks it
+when the keyboard opens but leaves `vh` and `dvh` alone, so CSS by itself
+cannot tell that half the screen is covered.
+
 **Live:** https://jebalirami7.github.io/currency-exchange/
 
 ## Adding a currency
@@ -15,7 +20,7 @@ direction to pick and no pair to swap.
 Add one entry to `CURRENCIES` in [`src/core/currencies.ts`](src/core/currencies.ts):
 
 ```ts
-{ code: 'EUR', name: 'Euro', decimals: 2, flag: '🇪🇺' },
+{ code: 'EUR', name: 'Euro', decimals: 2 },
 ```
 
 That is the whole change. The fields, the rate summary, the rate requests and

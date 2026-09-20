@@ -2,40 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Currency Exchange</title>
     <meta
       name="description"
       content="Convert between Indonesian Rupiah, US Dollar and Tunisian Dinar at live exchange rates."
     />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#0e1113" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    />
   </head>
 
   <body>
-    <main class="card">
-      <header class="card__header">
-        <div>
-          <h1 class="card__title">Currency Exchange</h1>
-          <p class="card__subtitle">Type in any currency — the rest follow.</p>
-        </div>
+    <main class="board">
+      <header class="board__head">
+        <h1 class="board__title">Currency Exchange</h1>
 
-        <button class="refresh" id="refresh" type="button" aria-label="Refresh rates">
+        <button class="reload" id="refresh" type="button" aria-label="Refresh rates">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-            <path d="M20 4v4.5h-4.5" />
+            <path d="M20 4.5V9h-4.5" />
           </svg>
         </button>
       </header>
 
-      <div class="rows" id="rows"></div>
+      <p class="board__lede">Type into any currency. The others follow.</p>
 
-      <p class="error" id="amount-error" role="alert" hidden>Enter a valid amount.</p>
+      <div class="rates" id="rows"></div>
 
-      <footer class="card__footer">
-        <p class="status" id="status" data-tone="loading" aria-live="polite">Loading rates…</p>
-        <p class="status__detail" id="status-detail"></p>
+      <p class="notice" id="amount-error" role="alert" hidden>That is not a valid amount.</p>
+
+      <footer class="meta">
+        <p class="meta__state" id="status" data-tone="loading" aria-live="polite">Loading rates</p>
+        <p class="meta__source" id="status-detail"></p>
       </footer>
     </main>
 
