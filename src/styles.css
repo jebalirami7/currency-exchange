@@ -73,12 +73,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Anchored to the top rather than centred: the board keeps its place when
-     the keyboard opens and takes half the screen, instead of being shoved
-     out of view. */
-  justify-content: flex-start;
+  /* `safe` falls back to the top when the content outgrows the space, so a
+     system keyboard raised on a browser that ignores `inputmode="none"`
+     cannot clip the top of the board away. */
+  justify-content: center;
+  justify-content: safe center;
   padding-inline: 16px;
-  padding-block: clamp(20px, 9vh, 72px) 24px;
+  padding-block: clamp(16px, 4vh, 40px);
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
@@ -90,6 +91,18 @@ body {
 
 .board {
   width: min(100%, 420px);
+  /* Takes the height it is given, so the keypad can sit at the bottom of it,
+     and stops growing on a large monitor rather than stretching forever. */
+  flex: 1 1 auto;
+  max-height: 820px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Held at the bottom, with clear air between the amounts and the keys. */
+#keypad {
+  margin-top: auto;
+  padding-top: clamp(20px, 5vh, 48px);
 }
 
 /* --- Head --------------------------------------------------------------- */
@@ -364,7 +377,6 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
-  margin-top: 18px;
   border: 1px solid var(--rule);
   border-radius: 6px;
   background: var(--rule);
@@ -378,8 +390,9 @@ body {
   font-family: var(--mono);
   font-size: 1.15rem;
   font-weight: 500;
-  /* Comfortably past the 44px that a fingertip needs. */
-  padding: 15px 0;
+  /* Stays past the 44px a fingertip needs, and gives back height on a short
+     screen rather than pushing the board off it. */
+  padding: clamp(11px, 2.2vh, 20px) 0;
   cursor: pointer;
   transition: background-color 90ms ease;
   -webkit-tap-highlight-color: transparent;
@@ -395,6 +408,111 @@ body {
   color: var(--ink-faint);
   cursor: default;
   opacity: 0.45;
+}
+
+/* On a touch device every key comes from the page's own keypad, so there is
+   nothing to select by hand — and no selection means no cut/copy/paste bar
+   thrown over the board. */
+.keypad-only .cell__input {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  caret-color: transparent;
+}
+
+/* --- Across screen sizes ------------------------------------------------ */
+
+/* Past phone width there is room for a wider board and larger figures. */
+@media (min-width: 640px) {
+  .board {
+    width: min(100%, 500px);
+    /* Past a phone the board takes only the height it needs and sits centred.
+       Holding the keys against the bottom edge is for thumbs; on a tablet or
+       a desktop it just opens a gulf between the amounts and the keypad. */
+    flex: 0 0 auto;
+    max-height: none;
+  }
+
+  .board__title {
+    font-size: 1.1rem;
+  }
+
+  .cell {
+    padding: 18px 10px 15px;
+  }
+
+  .cell__code {
+    font-size: 0.85rem;
+  }
+
+  .cell__name {
+    font-size: 0.7rem;
+  }
+
+  .cell__input[data-size='l'] {
+    font-size: 1.6rem;
+  }
+
+  .cell__input[data-size='m'] {
+    font-size: 1.35rem;
+  }
+
+  .cell__input[data-size='s'] {
+    font-size: 1.15rem;
+  }
+
+  .cell__input[data-size='xs'] {
+    font-size: 0.98rem;
+  }
+
+  .cell__rate {
+    font-size: 0.66rem;
+  }
+
+  .keypad__key {
+    font-size: 1.3rem;
+  }
+}
+
+/* A phone held sideways has almost no height to spare, so the standfirst —
+   the one line that only restates what the board already shows — goes. */
+@media (max-height: 560px) {
+  .board__lede {
+    display: none;
+  }
+
+  #keypad {
+    padding-top: 14px;
+  }
+}
+
+/* Short and wide, the keys move alongside the board instead of below it:
+   stacked, they run off the bottom of a phone held sideways. */
+@media (max-height: 560px) and (min-width: 640px) {
+  .board {
+    width: min(100%, 760px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+    column-gap: 24px;
+    align-content: start;
+  }
+
+  .board > * {
+    grid-column: 1;
+  }
+
+  #keypad {
+    grid-column: 2;
+    grid-row: 1 / span 20;
+    align-self: center;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .keypad__key {
+    padding: 9px 0;
+    font-size: 1.05rem;
+  }
 }
 
 /* --- Accessibility ------------------------------------------------------ */

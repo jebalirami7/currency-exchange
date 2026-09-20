@@ -112,10 +112,23 @@ export function deleteAtCaret(input: HTMLInputElement): void {
   input.setSelectionRange(from, from);
 }
 
+/** Whether the device is driven by a fingertip rather than a pointer. */
+export function isTouch(): boolean {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
 /**
- * Asks the browser not to raise the system keyboard on a touch device, since
- * the page carries its own keypad. A physical keyboard still works.
+ * Hands a field over to the built-in keypad on a touch device.
+ *
+ * `inputmode` asks for no system keyboard and `readonly` refuses one even
+ * where that is ignored, while still leaving the field focusable and its
+ * value settable from script. Refusing the context menu, together with the
+ * stylesheet's `user-select: none`, is what stops a tap raising the
+ * cut/copy/paste bar over the board — there is nothing in the field to
+ * select by hand when every key comes from the page.
  */
-export function suppressSystemKeyboard(input: HTMLInputElement): void {
-  if (window.matchMedia('(pointer: coarse)').matches) input.inputMode = 'none';
+export function useKeypadOnly(input: HTMLInputElement): void {
+  input.inputMode = 'none';
+  input.readOnly = true;
+  input.addEventListener('contextmenu', (event) => event.preventDefault());
 }

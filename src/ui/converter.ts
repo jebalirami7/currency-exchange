@@ -8,9 +8,10 @@ import {
   deleteAtCaret,
   fitToColumn,
   insertAtCaret,
+  isTouch,
   regroup,
   selectOnFirstTap,
-  suppressSystemKeyboard,
+  useKeypadOnly,
 } from './amount-input';
 import { createKeypad, type Keypad, type KeypadKey } from './keypad';
 import { requireElement } from './dom';
@@ -50,6 +51,14 @@ export class Converter {
   #amount: number | null = 1;
   #snapshot: RateSnapshot | null = null;
   #keypad: Keypad | null = null;
+  readonly #keypadOnly = isTouch();
+  /**
+   * Whether the next key starts a fresh amount rather than extending the one
+   * on screen. It stands in for selecting the field's contents, which is what
+   * a pointer device does on focus — but a selection on a phone is what
+   * summons the cut/copy/paste bar.
+   */
+  #replacing = false;
 
   constructor(rates: RateService = new RateService()) {
     this.#rates = rates;
@@ -57,12 +66,18 @@ export class Converter {
 
   /** Builds the fields, wires events and loads the first snapshot. */
   async start(): Promise<void> {
+    if (this.#keypadOnly) document.documentElement.classList.add('keypad-only');
+
     for (const currency of CURRENCIES) {
       const row = createAmountCell(currency);
       row.input.addEventListener('input', () => this.#onInput(currency.code));
-      selectOnFirstTap(row.input);
-      suppressSystemKeyboard(row.input);
+      if (this.#keypadOnly) {
+        useKeypadOnly(row.input);
+      } else {
+        selectOnFirstTap(row.input);
+      }
       row.input.addEventListener('focus', () => {
+        this.#replacing = true;
         this.#takeOver(currency.code);
         // Only scrolls if the keyboard has pushed the board out of view.
         row.root.scrollIntoView({ block: 'nearest' });
@@ -103,6 +118,7 @@ export class Converter {
     const row = this.#cells.get(code);
     if (!row) return;
 
+    this.#replacing = false;
     regroup(row.input, code);
     fitToColumn(row.input);
 
@@ -151,9 +167,18 @@ export class Converter {
     const row = this.#cells.get(this.#source);
     if (!row) return;
 
-    // Focusing selects the whole amount, so the first key of a fresh entry
-    // replaces it rather than appending to it.
-    if (document.activeElement !== row.input) row.input.focus({ preventScroll: true });
+    if (document.activeElement !== row.input) {
+      this.#replacing = true;
+      row.input.focus({ preventScroll: true });
+    }
+
+    // The first key after taking a field over starts the amount again,
+    // the way typing over a selection would.
+    if (this.#replacing) {
+      this.#replacing = false;
+      row.input.value = '';
+      row.input.setSelectionRange(0, 0);
+    }
 
     if (key === 'backspace') {
       deleteAtCaret(row.input);
