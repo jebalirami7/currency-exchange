@@ -71,6 +71,22 @@ unreachable, the app shows those rates and says so rather than showing nothing.
 Adding a provider means implementing `RateProvider` and appending it to the
 list in `src/rates/rate-service.ts`; nothing else changes.
 
+## Installing it
+
+The app is a PWA: it carries a manifest and a service worker, so a phone can
+add it to the home screen and open it without a browser around it.
+
+Nothing is precached by name. The build fingerprints its assets, so a list
+written into the worker would name the previous build's files; assets are
+cached as they are fetched instead. The one gap that leaves is the first
+visit, which loads the app before the worker controls anything — so the page
+hands the worker the list of what it just loaded, and the app survives going
+offline from that first visit rather than the second.
+
+Pages are fetched network-first, so a deploy is picked up on the next launch.
+Rates are never cached by the worker: the app keeps its own last snapshot and
+says how old it is.
+
 ## Project layout
 
 ```
@@ -79,6 +95,7 @@ src/
   rates/         Providers, provider fallback, caching
   ui/            DOM wiring
   styles.css
+public/          Manifest, service worker and icons, copied as they are
 index.html
 ```
 
