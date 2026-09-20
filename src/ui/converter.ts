@@ -22,6 +22,12 @@ type StatusTone = 'loading' | 'live' | 'warning' | 'error';
 export class Converter {
   readonly #rates: RateService;
   readonly #cells = new Map<CurrencyCode, AmountRow>();
+  /**
+   * The exact value behind each rendered field. Re-parsing the text would
+   * read back only what was displayed, so handing the lead to a rounded
+   * field would walk the amount a little further off every time.
+   */
+  readonly #rendered = new Map<CurrencyCode, { text: string; value: number }>();
 
   readonly #list = requireElement('#rows');
   readonly #status = requireElement('#status');
@@ -44,7 +50,7 @@ export class Converter {
       const row = createAmountRow(currency);
       row.input.addEventListener('input', () => this.#onInput(currency.code));
       row.input.addEventListener('focus', () => {
-        this.#setSource(currency.code);
+        this.#takeOver(currency.code);
         row.input.select();
       });
 
@@ -76,18 +82,33 @@ export class Converter {
     const row = this.#cells.get(code);
     if (!row) return;
 
-    this.#setSource(code);
+    this.#source = code;
+    this.#markSource();
     this.#amount = parseAmount(row.input.value, code);
     this.#error.hidden = row.input.value.trim() === '' || this.#amount !== null;
 
     this.#render();
   }
 
-  /** Focusing a field hands it the lead, so the rest read as derived from it. */
-  #setSource(code: CurrencyCode): void {
-    if (this.#source === code) return;
+  /**
+   * Focusing a field hands it the lead, so the rest read as derived from it.
+   *
+   * The amount comes from what that field already shows, not from the field
+   * that held the lead before: clicking a row displaying 16,239 rupiah must
+   * keep meaning 16,239 rupiah, rather than reinterpreting the previous
+   * field's number as this currency.
+   */
+  #takeOver(code: CurrencyCode): void {
+    const row = this.#cells.get(code);
+    if (!row || this.#source === code) return;
 
+    const rendered = this.#rendered.get(code);
     this.#source = code;
+    this.#amount =
+      rendered && rendered.text === row.input.value
+        ? rendered.value
+        : parseAmount(row.input.value, code);
+    this.#error.hidden = true;
     this.#markSource();
     this.#render();
   }
@@ -133,10 +154,15 @@ export class Converter {
       // under them.
       if (isSource || row.input === document.activeElement) continue;
 
-      const next =
-        this.#amount === null
-          ? ''
-          : formatAmount(convert(this.#amount, snapshot, this.#source, code), code);
+      if (this.#amount === null) {
+        this.#rendered.delete(code);
+        row.input.value = '';
+        continue;
+      }
+
+      const value = convert(this.#amount, snapshot, this.#source, code);
+      const next = formatAmount(value, code);
+      this.#rendered.set(code, { text: next, value });
 
       if (row.input.value !== next) {
         row.input.value = next;
