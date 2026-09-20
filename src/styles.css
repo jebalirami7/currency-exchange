@@ -82,162 +82,88 @@ body {
   font-size: 0.9rem;
 }
 
-/* --- Converter ---------------------------------------------------------- */
+/* --- Amount rows ------------------------------------------------------- */
 
-.converter {
+.rows {
   display: grid;
-  /* Grid items default to `min-width: auto`, so the nowrap result text would
-     otherwise set a minimum width the card cannot shrink below. */
+  /* Grid items default to `min-width: auto`, so a long amount would otherwise
+     set a minimum width the card cannot shrink below. */
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
-.field__label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.field__row {
+.row {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 4px;
+  padding: 10px 14px;
   transition: border-color 120ms ease;
 }
 
-.field__row:focus-within {
+.row:focus-within {
   border-color: var(--accent);
 }
 
-.field__input {
+.row__label {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 0 7px;
+  flex: none;
+  cursor: pointer;
+}
+
+.row__flag {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.row__code {
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.row__name {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.row__input {
   flex: 1;
   min-width: 0;
   border: 0;
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding: 0;
   outline: none;
 }
 
-.field__input--output {
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  white-space: nowrap;
-  scrollbar-width: none;
-}
-
-.field__select {
-  border: 0;
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  padding: 0 10px;
-  cursor: pointer;
-  outline-offset: 2px;
+.row__input::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .field__error {
-  margin: 6px 2px 0;
+  margin: 10px 2px 0;
   color: var(--danger);
   font-size: 0.82rem;
-}
-
-.swap {
-  justify-self: center;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  margin: -4px 0;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--accent);
-  cursor: pointer;
-  transition:
-    transform 180ms ease,
-    border-color 120ms ease;
-}
-
-.swap:hover {
-  border-color: var(--accent);
-}
-
-.swap:active {
-  transform: rotate(180deg);
-}
-
-.swap svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .rate {
   margin: 18px 0 0;
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- Rate table --------------------------------------------------------- */
-
-.table {
-  margin-top: 22px;
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-}
-
-.table__heading {
-  margin: 0 0 10px;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.table__list {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-}
-
-.table__row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 2px;
-  font-size: 0.92rem;
-}
-
-.table__row dt {
-  color: var(--text-muted);
-}
-
-.table__row dd {
-  margin: 0;
-  font-weight: 600;
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
 }
 

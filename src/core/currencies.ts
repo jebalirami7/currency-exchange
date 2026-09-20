@@ -14,10 +14,8 @@ export const CURRENCIES: readonly Currency[] = [
   { code: 'TND', name: 'Tunisian Dinar', flag: '🇹🇳' },
 ];
 
-/** Currency the app converts *from* on first load. */
-export const DEFAULT_FROM: CurrencyCode = 'USD';
-/** Currency the app converts *to* on first load. */
-export const DEFAULT_TO: CurrencyCode = 'TND';
+/** Field that holds the amount on first load. */
+export const DEFAULT_CURRENCY: CurrencyCode = 'USD';
 
 /**
  * Base currency requested from providers. Every provider quotes USD, and

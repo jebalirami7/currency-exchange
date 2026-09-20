@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  formatCurrency,
-  formatRate,
-  formatRateValue,
-  formatRelativeTime,
-  parseAmount,
-} from '../format';
+import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../format';
+
+/** The app groups thousands with a narrow no-break space, not a comma. */
+const GROUP = ' ';
 
 describe('parseAmount', () => {
   it('parses plain numbers', () => {
@@ -33,40 +30,42 @@ describe('parseAmount', () => {
   });
 });
 
-describe('formatCurrency', () => {
-  it('uses each currency’s symbol and default precision', () => {
-    expect(formatCurrency(1234.5, 'USD')).toBe('$1,234.50');
-    expect(formatCurrency(20_310_303.88, 'IDR')).toBe('Rp\u00a020,310,304');
-  });
-
-  it('formats every currency in one locale, left to right', () => {
-    expect(formatCurrency(1234.5, 'TND')).toBe('TND\u00a01,234.500');
+describe('formatAmount', () => {
+  it('uses the precision the currency itself uses', () => {
+    expect(formatAmount(1234.5, 'USD')).toBe(`1${GROUP}234.5`);
+    expect(formatAmount(20_310_303.88, 'IDR')).toBe(`20${GROUP}310${GROUP}304`);
+    expect(formatAmount(2.9117, 'TND')).toBe('2.912');
   });
 
   it('adds precision rather than displaying a small amount as zero', () => {
-    // 1 IDR in TND: three decimals would round this away entirely.
-    expect(formatCurrency(0.000_179, 'TND')).toBe('TND\u00a00.000179');
-    expect(formatCurrency(0.000_061_58, 'USD')).toBe('$0.0000616');
+    // 1 IDR is worth this much in TND; three decimals would round it away.
+    expect(formatAmount(0.000_179, 'TND')).toBe('0.000179');
+    expect(formatAmount(0.000_061_58, 'USD')).toBe('0.0000616');
   });
 
-  it('still formats zero at the default precision', () => {
-    expect(formatCurrency(0, 'USD')).toBe('$0.00');
-  });
-});
-
-describe('formatRateValue', () => {
-  it('keeps large rates readable', () => {
-    expect(formatRateValue(16_238.5)).toBe('16,238.5');
+  it('formats zero at the default precision', () => {
+    expect(formatAmount(0, 'USD')).toBe('0');
   });
 
-  it('keeps small rates meaningful', () => {
-    expect(formatRateValue(0.000_061_581_9)).toBe('0.0000615819');
+  it('round-trips back through parseAmount', () => {
+    for (const [amount, code] of [
+      [20_310_303.88, 'IDR'],
+      [1234.5, 'USD'],
+      [0.000_179, 'TND'],
+    ] as const) {
+      const formatted = formatAmount(amount, code);
+      expect(parseAmount(formatted)).toBeCloseTo(Number(formatted.replaceAll(GROUP, '')), 10);
+    }
   });
 });
 
 describe('formatRate', () => {
-  it('reads as a unit rate', () => {
-    expect(formatRate(2.9117, 'USD', 'TND')).toBe('1 USD = 2.9117 TND');
+  it('keeps large rates readable', () => {
+    expect(formatRate(16_238.5)).toBe(`16${GROUP}238.5`);
+  });
+
+  it('keeps small rates meaningful', () => {
+    expect(formatRate(0.000_061_581_9)).toBe('0.0000615819');
   });
 });
 

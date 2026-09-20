@@ -1,69 +1,55 @@
 import { convert, getRate } from '../core/convert';
-import { CURRENCIES, DEFAULT_FROM, DEFAULT_TO } from '../core/currencies';
-import {
-  formatCurrency,
-  formatRate,
-  formatRateValue,
-  formatRelativeTime,
-  parseAmount,
-} from '../core/format';
-import type { RateSnapshot } from '../core/types';
+import { CURRENCIES, DEFAULT_CURRENCY } from '../core/currencies';
+import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
+import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
-import { populateCurrencySelect } from './currency-select';
+import { createAmountRow } from './amount-row';
 import { requireElement } from './dom';
 
 /** How often rates are refreshed in the background while the tab is open. */
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
-interface Elements {
-  form: HTMLFormElement;
-  amount: HTMLInputElement;
-  from: HTMLSelectElement;
-  to: HTMLSelectElement;
-  result: HTMLOutputElement;
-  swap: HTMLButtonElement;
-  refresh: HTMLButtonElement;
-  rate: HTMLElement;
-  table: HTMLElement;
-  status: HTMLElement;
-  amountError: HTMLElement;
-}
-
 type StatusTone = 'info' | 'warning' | 'error';
 
+/**
+ * Every currency gets its own field, and they all hold the same value at once.
+ * Typing in any one of them makes it the source; the rest are recomputed from
+ * it, so there is no direction to choose and no pair to swap.
+ */
 export class Converter {
-  readonly #el: Elements;
   readonly #rates: RateService;
+  readonly #inputs = new Map<CurrencyCode, HTMLInputElement>();
+
+  readonly #rows = requireElement('#rows');
+  readonly #rate = requireElement('#rate');
+  readonly #status = requireElement('#status');
+  readonly #error = requireElement('#amount-error');
+  readonly #refresh = requireElement<HTMLButtonElement>('#refresh');
+
+  /** The field the user last typed in; every other field derives from it. */
+  #source: CurrencyCode = DEFAULT_CURRENCY;
+  #amount: number | null = 1;
   #snapshot: RateSnapshot | null = null;
 
   constructor(rates: RateService = new RateService()) {
     this.#rates = rates;
-    this.#el = {
-      form: requireElement<HTMLFormElement>('#converter'),
-      amount: requireElement<HTMLInputElement>('#amount'),
-      from: requireElement<HTMLSelectElement>('#from'),
-      to: requireElement<HTMLSelectElement>('#to'),
-      result: requireElement<HTMLOutputElement>('#result'),
-      swap: requireElement<HTMLButtonElement>('#swap'),
-      refresh: requireElement<HTMLButtonElement>('#refresh'),
-      rate: requireElement('#rate'),
-      table: requireElement('#rate-table'),
-      status: requireElement('#status'),
-      amountError: requireElement('#amount-error'),
-    };
   }
 
-  /** Renders the initial UI, wires events and loads the first snapshot. */
+  /** Builds the fields, wires events and loads the first snapshot. */
   async start(): Promise<void> {
-    populateCurrencySelect(this.#el.from, DEFAULT_FROM);
-    populateCurrencySelect(this.#el.to, DEFAULT_TO);
+    for (const currency of CURRENCIES) {
+      const { root, input } = createAmountRow(currency);
+      input.addEventListener('input', () => this.#onInput(currency.code));
+      input.addEventListener('focus', () => input.select());
 
-    this.#el.form.addEventListener('submit', (event) => event.preventDefault());
-    this.#el.amount.addEventListener('input', () => this.#render());
-    this.#el.from.addEventListener('change', () => this.#render());
-    this.#el.to.addEventListener('change', () => this.#render());
-    this.#el.swap.addEventListener('click', () => this.#swap());
-    this.#el.refresh.addEventListener('click', () => void this.#load({ force: true }));
+      this.#inputs.set(currency.code, input);
+      this.#rows.append(root);
+    }
+
+    const sourceInput = this.#inputs.get(this.#source);
+    if (sourceInput) sourceInput.value = '1';
+
+    this.#refresh.addEventListener('click', () => void this.#load({ force: true }));
 
     // Rates go stale while a tab sits in the background; catch up on return.
     window.setInterval(() => void this.#load(), AUTO_REFRESH_MS);
@@ -79,75 +65,70 @@ export class Converter {
     await this.#load();
   }
 
+  #onInput(code: CurrencyCode): void {
+    const input = this.#inputs.get(code);
+    if (!input) return;
+
+    this.#source = code;
+    this.#amount = parseAmount(input.value);
+    this.#error.hidden = input.value.trim() === '' || this.#amount !== null;
+
+    this.#render();
+  }
+
   async #load({ force = false } = {}): Promise<void> {
-    this.#el.refresh.disabled = true;
+    this.#refresh.disabled = true;
 
     try {
       const { snapshot, stale } = await this.#rates.getRates({ force });
       this.#snapshot = snapshot;
       this.#render();
 
-      if (stale) {
-        this.#setStatus('Offline — showing the last rates received.', 'warning');
-      } else {
-        this.#setStatus(
-          `${snapshot.provider} · updated ${formatRelativeTime(snapshot.updatedAt)}`,
-          'info',
-        );
-      }
+      this.#setStatus(
+        stale
+          ? 'Offline — showing the last rates received.'
+          : `${snapshot.provider} · updated ${formatRelativeTime(snapshot.updatedAt)}`,
+        stale ? 'warning' : 'info',
+      );
     } catch {
       this.#setStatus('Could not load exchange rates. Check your connection.', 'error');
     } finally {
-      this.#el.refresh.disabled = false;
+      this.#refresh.disabled = false;
     }
-  }
-
-  #swap(): void {
-    const { from, to } = this.#el;
-    [from.value, to.value] = [to.value, from.value];
-    this.#render();
   }
 
   #render(): void {
-    const amount = parseAmount(this.#el.amount.value);
-    const from = this.#el.from.value;
-    const to = this.#el.to.value;
-
-    const invalid = this.#el.amount.value.trim() !== '' && amount === null;
-    this.#el.amountError.hidden = !invalid;
-
     const snapshot = this.#snapshot;
-    if (!snapshot) {
-      this.#el.result.textContent = '—';
-      return;
+    if (!snapshot) return;
+
+    for (const [code, input] of this.#inputs) {
+      // Never overwrite what the user is editing, or a field they are sitting
+      // in — a background refresh would otherwise move the caret out from
+      // under them.
+      if (code === this.#source || input === document.activeElement) continue;
+
+      input.value =
+        this.#amount === null
+          ? ''
+          : formatAmount(convert(this.#amount, snapshot, this.#source, code), code);
     }
 
-    this.#el.result.textContent =
-      amount === null ? '—' : formatCurrency(convert(amount, snapshot, from, to), to);
-    this.#el.rate.textContent = formatRate(getRate(snapshot, from, to), from, to);
-    this.#renderTable(snapshot, from);
+    this.#renderRate(snapshot);
   }
 
-  #renderTable(snapshot: RateSnapshot, from: string): void {
-    const rows = CURRENCIES.filter((currency) => currency.code !== from).map((currency) => {
-      const row = document.createElement('div');
-      row.className = 'table__row';
+  /** A one-line summary of what the source currency is worth, e.g.
+   * `1 USD = 16,238.5 IDR · 2.9117 TND`. */
+  #renderRate(snapshot: RateSnapshot): void {
+    const quotes = CURRENCIES.filter((currency) => currency.code !== this.#source).map(
+      (currency) =>
+        `${formatRate(getRate(snapshot, this.#source, currency.code))} ${currency.code}`,
+    );
 
-      const term = document.createElement('dt');
-      term.textContent = `${currency.flag} ${currency.name}`;
-
-      const value = document.createElement('dd');
-      value.textContent = `${formatRateValue(getRate(snapshot, from, currency.code))} ${currency.code}`;
-
-      row.append(term, value);
-      return row;
-    });
-
-    this.#el.table.replaceChildren(...rows);
+    this.#rate.textContent = `1 ${this.#source} = ${quotes.join(' · ')}`;
   }
 
   #setStatus(message: string, tone: StatusTone): void {
-    this.#el.status.textContent = message;
-    this.#el.status.dataset['tone'] = tone;
+    this.#status.textContent = message;
+    this.#status.dataset['tone'] = tone;
   }
 }

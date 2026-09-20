@@ -4,6 +4,10 @@ A small, fast currency converter for **Indonesian Rupiah (IDR)**, **US Dollar (U
 and **Tunisian Dinar (TND)**, using live exchange rates. Static site, no backend,
 deployed to GitHub Pages.
 
+Every currency has its own field and they all hold the same value at once: type
+an amount into any one of them and the rest update as you type. There is no
+direction to pick and no pair to swap.
+
 **Live:** https://jebalirami7.github.io/currency-exchange/
 
 ## Adding a currency
@@ -14,7 +18,7 @@ Add one entry to `CURRENCIES` in [`src/core/currencies.ts`](src/core/currencies.
 { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
 ```
 
-That is the whole change. The selectors, the rate table, the rate requests and
+That is the whole change. The fields, the rate summary, the rate requests and
 the number formatting all derive from that list. Symbols and decimal precision
 are deliberately not configured — `Intl` already knows them for every ISO 4217
 code, so duplicating them here would only let them drift.

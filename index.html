@@ -16,56 +16,16 @@
     <main class="card">
       <header class="card__header">
         <h1 class="card__title">Currency Exchange</h1>
-        <p class="card__subtitle">Live rates, refreshed automatically.</p>
+        <p class="card__subtitle">Type in any currency to see the others.</p>
       </header>
 
-      <form class="converter" id="converter" autocomplete="off" novalidate>
-        <div class="field">
-          <label class="field__label" for="amount">Amount</label>
-          <div class="field__row">
-            <input
-              class="field__input"
-              id="amount"
-              name="amount"
-              type="text"
-              inputmode="decimal"
-              value="1"
-              aria-describedby="amount-error"
-            />
-            <select class="field__select" id="from" name="from" aria-label="Convert from"></select>
-          </div>
-          <p class="field__error" id="amount-error" role="alert" hidden>
-            Enter a valid amount.
-          </p>
-        </div>
+      <div class="rows" id="rows"></div>
 
-        <button class="swap" id="swap" type="button" aria-label="Swap currencies">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M7 4v13M7 4 4 7.5M7 4l3 3.5M17 20V7m0 13 3-3.5M17 20l-3-3.5" />
-          </svg>
-        </button>
+      <p class="field__error" id="amount-error" role="alert" hidden>
+        Enter a valid amount.
+      </p>
 
-        <div class="field">
-          <label class="field__label" for="result">Converted to</label>
-          <div class="field__row">
-            <output
-              class="field__input field__input--output"
-              id="result"
-              for="amount from to"
-              aria-live="polite"
-              >—</output
-            >
-            <select class="field__select" id="to" name="to" aria-label="Convert to"></select>
-          </div>
-        </div>
-      </form>
-
-      <p class="rate" id="rate">Loading rates…</p>
-
-      <section class="table" aria-labelledby="table-heading">
-        <h2 class="table__heading" id="table-heading">All rates</h2>
-        <dl class="table__list" id="rate-table"></dl>
-      </section>
+      <p class="rate" id="rate" aria-live="polite">Loading rates…</p>
 
       <footer class="card__footer">
         <p class="status" id="status">Connecting…</p>
