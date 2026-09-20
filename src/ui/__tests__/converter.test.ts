@@ -48,7 +48,8 @@ describe('Converter', () => {
 
   it('fills every field from the default amount', async () => {
     await mount();
-    expect(values()).toEqual({ USD: '1', IDR: '16,239', TND: '2.912' });
+    // The rupiah is shown in thousands; the others in full.
+    expect(values()).toEqual({ USD: '1', IDR: '16.2K', TND: '2.912' });
   });
 
   it('keeps the amounts when the lead moves to another field', async () => {
@@ -57,6 +58,7 @@ describe('Converter', () => {
     // Clicking the rupiah field must mean "16,239 rupiah", not "1 rupiah".
     field('IDR').dispatchEvent(new Event('focus'));
 
+    // Taking the field over spells the amount out, ready to be edited.
     expect(field('IDR').value).toBe('16,239');
     expect(Number(field('USD').value)).toBeCloseTo(1, 3);
     expect(Number(field('TND').value)).toBeCloseTo(2.912, 2);
@@ -67,7 +69,7 @@ describe('Converter', () => {
 
     type('TND', '100');
     expect(Number(values()['USD'])).toBeCloseTo(34.34, 2);
-    expect(values()['IDR']).toBe('557,698');
+    expect(values()['IDR']).toBe('557.7K');
 
     type('IDR', '1,000,000');
     expect(Number(values()['USD'])).toBeCloseTo(61.58, 2);
@@ -80,7 +82,7 @@ describe('Converter', () => {
     expect(values()).toEqual({ USD: '', IDR: '', TND: '' });
 
     type('USD', '2');
-    expect(values()['IDR']).toBe('32,477');
+    expect(values()['IDR']).toBe('32.5K');
   });
 
   it('groups the digits in the field being typed into', async () => {

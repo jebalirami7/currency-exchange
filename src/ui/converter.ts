@@ -1,6 +1,12 @@
 import { convert, getRate } from '../core/convert';
 import { CURRENCIES, DEFAULT_CURRENCY, getCurrency } from '../core/currencies';
-import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
+import {
+  formatAmount,
+  formatDisplay,
+  formatRate,
+  formatRelativeTime,
+  parseAmount,
+} from '../core/format';
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
 import { createAmountCell, type AmountCell } from './amount-cell';
@@ -92,8 +98,6 @@ export class Converter {
       source.input.value = '1';
       fitToColumn(source.input);
     }
-    this.#markSource();
-
     this.#keypad = createKeypad((key) => this.#press(key));
     this.#keypadSlot.append(this.#keypad.root);
 
@@ -148,6 +152,15 @@ export class Converter {
       rendered && rendered.text === row.input.value
         ? rendered.value
         : parseAmount(row.input.value, code);
+
+    // A field being edited shows its amount in full: `16.2K` is for reading,
+    // not for putting a caret into.
+    if (this.#amount !== null) {
+      row.input.value = formatAmount(this.#amount, code);
+      row.input.setSelectionRange(row.input.value.length, row.input.value.length);
+      fitToColumn(row.input);
+    }
+
     this.#error.hidden = true;
     this.#markSource();
     this.#render();
@@ -172,12 +185,19 @@ export class Converter {
       row.input.focus({ preventScroll: true });
     }
 
-    // The first key after taking a field over starts the amount again,
-    // the way typing over a selection would.
+    // The first key after taking a field over starts the amount again, the
+    // way typing over a selection would — except backspace, which trims a
+    // digit off the amount rather than throwing all of it away.
     if (this.#replacing) {
       this.#replacing = false;
-      row.input.value = '';
-      row.input.setSelectionRange(0, 0);
+
+      if (key === 'backspace') {
+        const end = row.input.value.length;
+        row.input.setSelectionRange(end, end);
+      } else {
+        row.input.value = '';
+        row.input.setSelectionRange(0, 0);
+      }
     }
 
     if (key === 'backspace') {
@@ -235,7 +255,7 @@ export class Converter {
       }
 
       const value = convert(this.#amount, snapshot, this.#source, code);
-      const next = formatAmount(value, code);
+      const next = formatDisplay(value, code);
       this.#rendered.set(code, { text: next, value });
 
       if (row.input.value !== next) {

@@ -12,6 +12,12 @@ export interface Currency {
    * gives the rupiah two decimals, Node gives it none.
    */
   readonly decimals: number;
+  /**
+   * Whether everyday amounts are long enough to be worth showing in
+   * thousands — `16.2K` rather than `16,239`. Set for the rupiah, whose
+   * amounts run to seven and eight digits.
+   */
+  readonly compact?: boolean;
 }
 
 /**

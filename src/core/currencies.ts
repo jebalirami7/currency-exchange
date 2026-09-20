@@ -7,10 +7,11 @@ import type { Currency, CurrencyCode } from './types';
  * summary, the formatter and the providers all derive from this list.
  *
  * `decimals` is how many decimal places the currency is quoted to in practice:
- * none for the rupiah, two for the dollar, three for the dinar.
+ * none for the rupiah, two for the dollar, three for the dinar. `compact`
+ * shows an amount in thousands, which suits a currency counted in millions.
  */
 export const CURRENCIES: readonly Currency[] = [
-  { code: 'IDR', name: 'Indonesian Rupiah', decimals: 0 },
+  { code: 'IDR', name: 'Indonesian Rupiah', decimals: 0, compact: true },
   { code: 'USD', name: 'US Dollar', decimals: 2 },
   { code: 'TND', name: 'Tunisian Dinar', decimals: 3 },
 ];

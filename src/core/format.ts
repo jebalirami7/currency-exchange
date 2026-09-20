@@ -63,6 +63,35 @@ export function formatAmount(amount: number, code: CurrencyCode): string {
   ).format(amount);
 }
 
+/** Below this an amount is short enough to read in full. */
+const COMPACT_FROM = 1000;
+
+/**
+ * Formats an amount for a field the reader is not editing.
+ *
+ * A currency marked `compact` is shown in thousands — `16.2K`, `2,500K` —
+ * because eight digits in a column a third of a phone wide are read by
+ * counting, not at a glance. The exact value is kept alongside the text, so
+ * the rounding here never reaches the conversion.
+ */
+export function formatDisplay(amount: number, code: CurrencyCode): string {
+  if (!getCurrency(code).compact || Math.abs(amount) < COMPACT_FROM) {
+    return formatAmount(amount, code);
+  }
+
+  const thousands = amount / 1000;
+  const digits = Math.abs(thousands) < COMPACT_FROM ? 1 : 0;
+
+  return `${formatter(
+    `decimal:${digits}`,
+    () =>
+      new Intl.NumberFormat(DISPLAY_LOCALE, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: digits,
+      }),
+  ).format(thousands)}K`;
+}
+
 /**
  * Formats a bare exchange rate. Significant digits rather than fixed decimals,
  * because rates range from ~16,000 (USD to IDR) to ~0.00006 (IDR to USD).
@@ -190,6 +219,9 @@ export function parseAmount(input: string, code: CurrencyCode): number | null {
 
   const { integer, fraction } = splitAmount(cleaned, code);
   const value = Number(fraction === null ? integer : `${integer}.${fraction}`);
+  if (!Number.isFinite(value) || value < 0) return null;
 
-  return Number.isFinite(value) && value >= 0 ? value : null;
+  // `16.2K` reads back as the thousands it stands for, so a compact amount
+  // means the same thing whether it is displayed or typed.
+  return /k\s*$/i.test(input.trim()) ? value * 1000 : value;
 }

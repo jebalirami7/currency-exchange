@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatAmount,
+  formatDisplay,
   formatRate,
   formatRelativeTime,
   groupWhileTyping,
@@ -150,5 +151,28 @@ describe('groupWhileTyping', () => {
       const shown = groupWhileTyping(typed, code);
       expect(parseAmount(shown, code)).toBe(parseAmount(typed, code));
     }
+  });
+});
+
+describe('formatDisplay', () => {
+  it('shows a rupiah amount in thousands', () => {
+    expect(formatDisplay(16_238.5, 'IDR')).toBe('16.2K');
+    expect(formatDisplay(557_698, 'IDR')).toBe('557.7K');
+    expect(formatDisplay(2_500_000, 'IDR')).toBe('2,500K');
+  });
+
+  it('leaves an amount below a thousand in full', () => {
+    expect(formatDisplay(999, 'IDR')).toBe('999');
+    expect(formatDisplay(0, 'IDR')).toBe('0');
+  });
+
+  it('leaves currencies that are not counted in millions alone', () => {
+    expect(formatDisplay(16_238.5, 'USD')).toBe('16,238.5');
+    expect(formatDisplay(2.912, 'TND')).toBe('2.912');
+  });
+
+  it('reads its own output back as the thousands it stands for', () => {
+    expect(parseAmount(formatDisplay(2_500_000, 'IDR'), 'IDR')).toBe(2_500_000);
+    expect(parseAmount('16K', 'IDR')).toBe(16_000);
   });
 });
