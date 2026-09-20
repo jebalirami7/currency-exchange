@@ -20,8 +20,13 @@
   color-scheme: light dark;
 }
 
+/* Dark has two ways in — the device setting, and the toggle — and a token
+   defined for only one of them would apply in only one of them. The two
+   blocks below carry the same palette and are kept in step by hand.
+   `:not([data-theme='light'])` is what lets an explicit light choice win on
+   a device set to dark. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --paper: #0e1113;
     --panel: #15191c;
     --ink: #edeff1;
@@ -34,6 +39,20 @@
     --warning: #dfa63c;
     --danger: #e8776a;
   }
+}
+
+:root[data-theme='dark'] {
+    --paper: #0e1113;
+    --panel: #15191c;
+    --ink: #edeff1;
+    --ink-muted: #99a0a7;
+    --ink-faint: #6a7178;
+    --rule: #252b30;
+    --rule-strong: #333a41;
+    --accent: #4fc2a0;
+    --accent-wash: #152a25;
+    --warning: #dfa63c;
+    --danger: #e8776a;
 }
 
 *,
@@ -90,12 +109,18 @@ body {
 }
 
 .board__lede {
-  margin: 2px 0 20px;
+  margin: 6px 0 18px;
   color: var(--ink-muted);
   font-size: 0.82rem;
 }
 
-.reload {
+.board__tools {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.tool {
   flex: none;
   display: grid;
   place-items: center;
@@ -111,20 +136,20 @@ body {
     border-color 120ms ease;
 }
 
-.reload:hover:not(:disabled) {
+.tool:hover:not(:disabled) {
   color: var(--accent);
   border-color: var(--rule-strong);
 }
 
-.reload:disabled {
+.tool:disabled {
   cursor: progress;
 }
 
-.reload:disabled svg {
+#refresh:disabled svg {
   animation: spin 900ms linear infinite;
 }
 
-.reload svg {
+.tool svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -132,6 +157,16 @@ body {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.tool__sun,
+.tool__moon {
+  display: none;
+}
+
+#theme[data-theme='dark'] .tool__sun,
+#theme[data-theme='light'] .tool__moon {
+  display: block;
 }
 
 @keyframes spin {
@@ -319,6 +354,47 @@ body {
 
 .meta__source:empty {
   display: none;
+}
+
+/* --- Keypad ------------------------------------------------------------- */
+
+/* The page carries its own keys so that entering an amount never raises the
+   system keyboard over the board. */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.keypad__key {
+  border: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 500;
+  /* Comfortably past the 44px that a fingertip needs. */
+  padding: 15px 0;
+  cursor: pointer;
+  transition: background-color 90ms ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.keypad__key:hover:not(:disabled),
+.keypad__key:active:not(:disabled) {
+  background: var(--accent-wash);
+}
+
+.keypad__key:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+  opacity: 0.45;
 }
 
 /* --- Accessibility ------------------------------------------------------ */

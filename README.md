@@ -8,10 +8,17 @@ Every currency has its own field and they all hold the same value at once: type
 an amount into any one of them and the rest update as you type. There is no
 direction to pick and no pair to swap.
 
-The layout is anchored to the top of the visible viewport rather than centred
-in it, and reads that viewport from `visualViewport` — iOS Safari shrinks it
-when the keyboard opens but leaves `vh` and `dvh` alone, so CSS by itself
-cannot tell that half the screen is covered.
+Amounts are entered on a keypad built into the page, so the system keyboard
+never covers the board: the fields carry `inputmode="none"` on a touch device,
+which asks the browser not to raise one while still accepting a physical
+keyboard. The decimal key is disabled for a currency quoted in whole units.
+
+The layout is also anchored to the top of the visible viewport rather than
+centred in it, and reads that viewport from `visualViewport`, so a system
+keyboard raised anyway cannot push the board out of view.
+
+The theme follows the device until you press the toggle, after which the
+choice is remembered.
 
 **Live:** https://jebalirami7.github.io/currency-exchange/
 

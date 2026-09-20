@@ -81,3 +81,41 @@ export function fitToColumn(input: HTMLInputElement): void {
   const length = input.value.length;
   input.dataset['size'] = length <= 5 ? 'l' : length <= 7 ? 'm' : length <= 9 ? 's' : 'xs';
 }
+
+/** Replaces the selection, or inserts at the caret, and leaves the caret after it. */
+export function insertAtCaret(input: HTMLInputElement, text: string): void {
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+
+  input.value = input.value.slice(0, start) + text + input.value.slice(end);
+  input.setSelectionRange(start + text.length, start + text.length);
+}
+
+/** Deletes the selection, or the digit before the caret. */
+export function deleteAtCaret(input: HTMLInputElement): void {
+  const start = input.selectionStart ?? 0;
+  const end = input.selectionEnd ?? start;
+
+  if (start !== end) {
+    input.value = input.value.slice(0, start) + input.value.slice(end);
+    input.setSelectionRange(start, start);
+    return;
+  }
+
+  // Step back over a grouping separator, so a press always removes a digit
+  // rather than a comma the app put there itself.
+  let from = start - 1;
+  if (input.value[from] === ',') from -= 1;
+  if (from < 0) return;
+
+  input.value = input.value.slice(0, from) + input.value.slice(start);
+  input.setSelectionRange(from, from);
+}
+
+/**
+ * Asks the browser not to raise the system keyboard on a touch device, since
+ * the page carries its own keypad. A physical keyboard still works.
+ */
+export function suppressSystemKeyboard(input: HTMLInputElement): void {
+  if (window.matchMedia('(pointer: coarse)').matches) input.inputMode = 'none';
+}

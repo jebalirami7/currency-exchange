@@ -1,10 +1,18 @@
 import { convert, getRate } from '../core/convert';
-import { CURRENCIES, DEFAULT_CURRENCY } from '../core/currencies';
+import { CURRENCIES, DEFAULT_CURRENCY, getCurrency } from '../core/currencies';
 import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
 import { createAmountCell, type AmountCell } from './amount-cell';
-import { fitToColumn, regroup, selectOnFirstTap } from './amount-input';
+import {
+  deleteAtCaret,
+  fitToColumn,
+  insertAtCaret,
+  regroup,
+  selectOnFirstTap,
+  suppressSystemKeyboard,
+} from './amount-input';
+import { createKeypad, type Keypad, type KeypadKey } from './keypad';
 import { requireElement } from './dom';
 
 /** How often rates are refreshed in the background while the tab is open. */
@@ -31,6 +39,7 @@ export class Converter {
   readonly #rendered = new Map<CurrencyCode, { text: string; value: number }>();
 
   readonly #list = requireElement('#rows');
+  readonly #keypadSlot = requireElement('#keypad');
   readonly #status = requireElement('#status');
   readonly #detail = requireElement('#status-detail');
   readonly #error = requireElement('#amount-error');
@@ -40,6 +49,7 @@ export class Converter {
   #source: CurrencyCode = DEFAULT_CURRENCY;
   #amount: number | null = 1;
   #snapshot: RateSnapshot | null = null;
+  #keypad: Keypad | null = null;
 
   constructor(rates: RateService = new RateService()) {
     this.#rates = rates;
@@ -51,6 +61,7 @@ export class Converter {
       const row = createAmountCell(currency);
       row.input.addEventListener('input', () => this.#onInput(currency.code));
       selectOnFirstTap(row.input);
+      suppressSystemKeyboard(row.input);
       row.input.addEventListener('focus', () => {
         this.#takeOver(currency.code);
         // Only scrolls if the keyboard has pushed the board out of view.
@@ -68,6 +79,10 @@ export class Converter {
     }
     this.#markSource();
 
+    this.#keypad = createKeypad((key) => this.#press(key));
+    this.#keypadSlot.append(this.#keypad.root);
+
+    this.#markSource();
     this.#refresh.addEventListener('click', () => void this.#load({ force: true }));
 
     // Rates go stale while a tab sits in the background; catch up on return.
@@ -126,6 +141,27 @@ export class Converter {
     for (const [code, row] of this.#cells) {
       row.root.classList.toggle('cell--source', code === this.#source);
     }
+
+    // A currency quoted in whole units has no use for a decimal point.
+    this.#keypad?.setDecimalAllowed(getCurrency(this.#source).decimals > 0);
+  }
+
+  /** Applies a keypad press to whichever field currently holds the amount. */
+  #press(key: KeypadKey): void {
+    const row = this.#cells.get(this.#source);
+    if (!row) return;
+
+    // Focusing selects the whole amount, so the first key of a fresh entry
+    // replaces it rather than appending to it.
+    if (document.activeElement !== row.input) row.input.focus({ preventScroll: true });
+
+    if (key === 'backspace') {
+      deleteAtCaret(row.input);
+    } else {
+      insertAtCaret(row.input, key);
+    }
+
+    this.#onInput(this.#source);
   }
 
   async #load({ force = false } = {}): Promise<void> {

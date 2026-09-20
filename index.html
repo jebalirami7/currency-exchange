@@ -9,7 +9,6 @@
       content="Convert between Indonesian Rupiah, US Dollar and Tunisian Dinar at live exchange rates."
     />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0e1113" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,6 +17,19 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
     />
+
+    <script>
+      // Applies a remembered theme before the first paint. The module that
+      // owns the toggle loads too late to prevent a flash of the other one.
+      try {
+        var saved = localStorage.getItem('currency-exchange:theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.dataset.theme = saved;
+        }
+      } catch (error) {
+        /* Storage blocked; the device preference stands. */
+      }
+    </script>
   </head>
 
   <body>
@@ -25,12 +37,24 @@
       <header class="board__head">
         <h1 class="board__title">Currency Exchange</h1>
 
-        <button class="reload" id="refresh" type="button" aria-label="Refresh rates">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-            <path d="M20 4.5V9h-4.5" />
-          </svg>
-        </button>
+        <div class="board__tools">
+          <button class="tool" id="theme" type="button" aria-label="Switch theme">
+            <svg class="tool__sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="4.2" />
+              <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6" />
+            </svg>
+            <svg class="tool__moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z" />
+            </svg>
+          </button>
+
+          <button class="tool" id="refresh" type="button" aria-label="Refresh rates">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+              <path d="M20 4.5V9h-4.5" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <p class="board__lede">Type into any currency. The others follow.</p>
@@ -43,6 +67,8 @@
         <p class="meta__state" id="status" data-tone="loading" aria-live="polite">Loading rates</p>
         <p class="meta__source" id="status-detail"></p>
       </footer>
+
+      <div id="keypad"></div>
     </main>
 
     <script type="module" src="/src/main.ts"></script>
