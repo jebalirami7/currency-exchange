@@ -68,10 +68,10 @@ npm run preview  # serve the production build
 
 ## Deployment
 
-Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml),
-which typechecks, tests, builds and publishes to GitHub Pages.
-
-One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Pushing to the default branch runs
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which
+typechecks, tests, builds and publishes to GitHub Pages. The workflow enables
+Pages itself on its first run, so there is no manual setup step.
 
 The build needs to know the sub-path the site is served from, so the workflow
 passes the repository name as `BASE_PATH`. Renaming the repository therefore
