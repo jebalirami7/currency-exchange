@@ -79,9 +79,9 @@ body {
   justify-content: center;
   justify-content: safe center;
   padding-inline: 16px;
-  /* Airy above, tight below: the keys are meant to reach the bottom edge,
-     clearing only the home indicator on a phone that has one. */
-  padding-block: clamp(16px, 4vh, 40px) max(10px, env(safe-area-inset-bottom, 0px));
+  /* Airy above, and enough below to lift the keys clear of the bottom edge —
+     at least the home indicator's room on a phone that has one. */
+  padding-block: clamp(16px, 4vh, 40px) max(28px, env(safe-area-inset-bottom, 0px));
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
