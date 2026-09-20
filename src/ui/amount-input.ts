@@ -69,3 +69,15 @@ function offsetAfterDigits(text: string, count: number): number {
 
   return text.length;
 }
+
+/**
+ * Steps the type size down as a figure gets longer.
+ *
+ * Side by side, each currency has roughly a third of the screen, and a rupiah
+ * amount runs to ten characters or more. Tiers rather than a fluid size keep
+ * the three columns visually level with one another.
+ */
+export function fitToColumn(input: HTMLInputElement): void {
+  const length = input.value.length;
+  input.dataset['size'] = length <= 5 ? 'l' : length <= 7 ? 'm' : length <= 9 ? 's' : 'xs';
+}

@@ -142,104 +142,110 @@ body {
 
 /* --- Rate board --------------------------------------------------------- */
 
-/* One panel divided by hairlines, rather than three separate cards: the rows
-   are readings off the same instrument, not unrelated objects. */
+/* The currencies sit side by side, as columns of one board rather than
+   separate cards. `auto-fit` keeps that true as currencies are added: three
+   fit across a phone, and a fourth wraps to a second line rather than
+   squeezing every column past reading size. The 1px gap over a ruled ground
+   draws the dividers. */
 .rates {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 1px;
   border: 1px solid var(--rule);
   border-radius: 6px;
-  background: var(--panel);
+  background: var(--rule);
   overflow: hidden;
 }
 
-.row {
+.cell {
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-  grid-template-areas:
-    'meta value'
-    'meta rate';
-  align-items: center;
-  column-gap: 14px;
-  padding: 14px 16px;
-  border-top: 1px solid var(--rule);
+  gap: 2px;
+  justify-items: center;
+  padding: 14px 8px 12px;
+  background: var(--panel);
   transition: background-color 140ms ease;
 }
 
-.row:first-child {
-  border-top: 0;
-}
-
-/* The row being typed into holds the reading; the rest are conversions of it. */
-.row--source {
+/* The column being typed into holds the reading; the rest are conversions. */
+.cell--source {
   background: var(--accent-wash);
 }
 
-.row__meta {
-  grid-area: meta;
+.cell__label {
   display: grid;
   gap: 1px;
+  justify-items: center;
   cursor: pointer;
 }
 
-.row__code {
-  font-size: 0.82rem;
+.cell__code {
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
 }
 
-.row--source .row__code {
+.cell--source .cell__code {
   color: var(--accent);
 }
 
-.row__name {
+.cell__name {
   color: var(--ink-muted);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: 0.64rem;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
 }
 
-.row__value {
-  grid-area: value;
-  display: flex;
-  min-width: 0;
-}
-
-.row__input {
-  min-width: 0;
+.cell__input {
   width: 100%;
+  margin-top: 6px;
   border: 0;
   background: none;
   color: var(--ink-muted);
   font-family: var(--mono);
-  /* Stays at or above 16px so that focusing a field never zooms iOS Safari. */
-  font-size: 1.32rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  text-align: right;
+  letter-spacing: -0.02em;
+  text-align: center;
   padding: 0;
   outline: none;
 }
 
-.row--source .row__input {
+/* Long figures step down so the three columns stay level. */
+.cell__input[data-size='l'] {
+  font-size: 1.3rem;
+}
+
+.cell__input[data-size='m'] {
+  font-size: 1.1rem;
+}
+
+.cell__input[data-size='s'] {
+  font-size: 0.95rem;
+}
+
+.cell__input[data-size='xs'] {
+  font-size: 0.82rem;
+}
+
+.cell--source .cell__input {
   color: var(--ink);
 }
 
-.row__input::placeholder {
+.cell__input::placeholder {
   color: var(--ink-faint);
 }
 
-.row__rate {
-  grid-area: rate;
+.cell__rate {
   color: var(--ink-muted);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
-  text-align: right;
-  min-height: 0.95rem;
+  letter-spacing: -0.01em;
+  min-height: 0.9rem;
 }
 
-.row--changed .row__input {
+.cell--changed .cell__input {
   animation: settle 700ms ease-out;
 }
 
@@ -322,8 +328,8 @@ body {
   outline-offset: 2px;
 }
 
-/* The row already shades when it holds focus; a ring would box it twice. */
-.row__input:focus-visible {
+/* The column already shades when it holds focus; a ring would box it twice. */
+.cell__input:focus-visible {
   outline: none;
 }
 

@@ -3,8 +3,8 @@ import { CURRENCIES, DEFAULT_CURRENCY } from '../core/currencies';
 import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
-import { createAmountRow, type AmountRow } from './amount-row';
-import { regroup, selectOnFirstTap } from './amount-input';
+import { createAmountCell, type AmountCell } from './amount-cell';
+import { fitToColumn, regroup, selectOnFirstTap } from './amount-input';
 import { requireElement } from './dom';
 
 /** How often rates are refreshed in the background while the tab is open. */
@@ -22,7 +22,7 @@ type StatusTone = 'loading' | 'live' | 'warning' | 'error';
  */
 export class Converter {
   readonly #rates: RateService;
-  readonly #cells = new Map<CurrencyCode, AmountRow>();
+  readonly #cells = new Map<CurrencyCode, AmountCell>();
   /**
    * The exact value behind each rendered field. Re-parsing the text would
    * read back only what was displayed, so handing the lead to a rounded
@@ -48,12 +48,12 @@ export class Converter {
   /** Builds the fields, wires events and loads the first snapshot. */
   async start(): Promise<void> {
     for (const currency of CURRENCIES) {
-      const row = createAmountRow(currency);
+      const row = createAmountCell(currency);
       row.input.addEventListener('input', () => this.#onInput(currency.code));
       selectOnFirstTap(row.input);
       row.input.addEventListener('focus', () => {
         this.#takeOver(currency.code);
-        // Only scrolls if the keyboard has pushed this row out of view.
+        // Only scrolls if the keyboard has pushed the board out of view.
         row.root.scrollIntoView({ block: 'nearest' });
       });
 
@@ -62,7 +62,10 @@ export class Converter {
     }
 
     const source = this.#cells.get(this.#source);
-    if (source) source.input.value = '1';
+    if (source) {
+      source.input.value = '1';
+      fitToColumn(source.input);
+    }
     this.#markSource();
 
     this.#refresh.addEventListener('click', () => void this.#load({ force: true }));
@@ -86,6 +89,7 @@ export class Converter {
     if (!row) return;
 
     regroup(row.input, code);
+    fitToColumn(row.input);
 
     this.#source = code;
     this.#markSource();
@@ -120,7 +124,7 @@ export class Converter {
 
   #markSource(): void {
     for (const [code, row] of this.#cells) {
-      row.root.classList.toggle('row--source', code === this.#source);
+      row.root.classList.toggle('cell--source', code === this.#source);
     }
   }
 
@@ -157,11 +161,15 @@ export class Converter {
       // Never overwrite what the user is editing, or a field they are sitting
       // in — a background refresh would otherwise move the caret out from
       // under them.
-      if (isSource || row.input === document.activeElement) continue;
+      if (isSource || row.input === document.activeElement) {
+        fitToColumn(row.input);
+        continue;
+      }
 
       if (this.#amount === null) {
         this.#rendered.delete(code);
         row.input.value = '';
+        fitToColumn(row.input);
         continue;
       }
 
@@ -173,16 +181,17 @@ export class Converter {
         row.input.value = next;
         this.#flash(row);
       }
+      fitToColumn(row.input);
     }
   }
 
   /** Briefly highlights a value that just changed, so the update is visible. */
-  #flash(row: AmountRow): void {
-    row.root.classList.remove('row--changed');
+  #flash(row: AmountCell): void {
+    row.root.classList.remove('cell--changed');
     // Force a reflow so re-adding the class restarts the animation.
     void row.root.offsetWidth;
-    row.root.classList.add('row--changed');
-    window.setTimeout(() => row.root.classList.remove('row--changed'), FLASH_MS);
+    row.root.classList.add('cell--changed');
+    window.setTimeout(() => row.root.classList.remove('cell--changed'), FLASH_MS);
   }
 
   #renderStatus(snapshot: RateSnapshot, stale: boolean): void {
