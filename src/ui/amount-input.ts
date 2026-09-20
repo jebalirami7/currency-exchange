@@ -80,6 +80,9 @@ function offsetAfterDigits(text: string, count: number): number {
 export function fitToColumn(input: HTMLInputElement): void {
   const length = input.value.length;
   input.dataset['size'] = length <= 5 ? 'l' : length <= 7 ? 'm' : length <= 9 ? 's' : 'xs';
+  // Shrinks the field to its own figure so a unit suffix sits against it
+  // rather than stranded at the edge of the column.
+  input.size = Math.max(1, length);
 }
 
 /** Replaces the selection, or inserts at the caret, and leaves the caret after it. */

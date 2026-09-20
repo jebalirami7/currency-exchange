@@ -247,9 +247,32 @@ body {
   text-wrap: balance;
 }
 
-.cell__input {
-  width: 100%;
+.cell__value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
   margin-top: 6px;
+  max-width: 100%;
+}
+
+/* Marks what the column counts in, and stays put while the figure is typed. */
+.cell__unit {
+  flex: none;
+  color: var(--ink-muted);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.cell--source .cell__unit {
+  color: var(--ink);
+}
+
+.cell__input {
+  /* Sized by its own `size` attribute, so the unit sits against the figure. */
+  min-width: 0;
+  max-width: 100%;
   border: 0;
   background: none;
   color: var(--ink-muted);

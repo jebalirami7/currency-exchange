@@ -23,11 +23,24 @@ export function createAmountCell(currency: Currency): AmountCell {
   label.htmlFor = input.id;
   label.append(span('cell__code', currency.code), span('cell__name', currency.name));
 
+  const value = document.createElement('div');
+  value.className = 'cell__value';
+  value.append(input);
+  if (currency.unitSuffix) value.append(span('cell__unit', currency.unitSuffix));
+
   const rate = span('cell__rate', '');
 
   const root = document.createElement('div');
   root.className = 'cell';
-  root.append(label, input, rate);
+  root.append(label, value, rate);
+
+  // The field shrinks to its figure, so the rest of the column has to hand
+  // focus over or there is dead space either side of it that does nothing.
+  root.addEventListener('pointerdown', (event) => {
+    if (event.target === input) return;
+    event.preventDefault();
+    input.focus();
+  });
 
   return { root, input, rate };
 }

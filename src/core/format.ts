@@ -1,4 +1,4 @@
-import { getCurrency } from './currencies';
+import { displayUnit, getCurrency } from './currencies';
 import type { CurrencyCode } from './types';
 
 /**
@@ -48,11 +48,12 @@ function currencyPrecision(code: CurrencyCode): number {
 }
 
 /**
- * Formats an amount for its editable field: no currency symbol, since the
- * field is labelled with one, and precision suited to the currency.
+ * Formats an amount as its column counts it: the rupiah column is in
+ * thousands, so 150,000 rupiah reads 150.
  */
 export function formatAmount(amount: number, code: CurrencyCode): string {
-  const digits = fractionDigitsFor(amount, code);
+  const shown = amount / displayUnit(code);
+  const digits = fractionDigitsFor(shown, code);
   return formatter(
     `decimal:${digits}`,
     () =>
@@ -60,36 +61,7 @@ export function formatAmount(amount: number, code: CurrencyCode): string {
         minimumFractionDigits: 0,
         maximumFractionDigits: digits,
       }),
-  ).format(amount);
-}
-
-/** Below this an amount is short enough to read in full. */
-const COMPACT_FROM = 1000;
-
-/**
- * Formats an amount for a field the reader is not editing.
- *
- * A currency marked `compact` is shown in thousands — `16.2K`, `2,500K` —
- * because eight digits in a column a third of a phone wide are read by
- * counting, not at a glance. The exact value is kept alongside the text, so
- * the rounding here never reaches the conversion.
- */
-export function formatDisplay(amount: number, code: CurrencyCode): string {
-  if (!getCurrency(code).compact || Math.abs(amount) < COMPACT_FROM) {
-    return formatAmount(amount, code);
-  }
-
-  const thousands = amount / 1000;
-  const digits = Math.abs(thousands) < COMPACT_FROM ? 1 : 0;
-
-  return `${formatter(
-    `decimal:${digits}`,
-    () =>
-      new Intl.NumberFormat(DISPLAY_LOCALE, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: digits,
-      }),
-  ).format(thousands)}K`;
+  ).format(shown);
 }
 
 /**
@@ -211,17 +183,17 @@ export function groupWhileTyping(input: string, code: CurrencyCode): string {
  * A lone separator is genuinely ambiguous — `2.912` is two thousand nine
  * hundred and twelve or two point nine one two — so the currency decides.
  * The dinar is quoted to three decimals, so `2.912` in a TND field is an
- * amount; the rupiah has none, so `16,239` in an IDR field is thousands.
+ * amount; the rupiah column carries one, so `2,912` there is thousands.
  */
 export function parseAmount(input: string, code: CurrencyCode): number | null {
   const cleaned = clean(input);
   if (cleaned === '') return null;
 
   const { integer, fraction } = splitAmount(cleaned, code);
-  const value = Number(fraction === null ? integer : `${integer}.${fraction}`);
-  if (!Number.isFinite(value) || value < 0) return null;
+  const shown = Number(fraction === null ? integer : `${integer}.${fraction}`);
+  if (!Number.isFinite(shown) || shown < 0) return null;
 
-  // `16.2K` reads back as the thousands it stands for, so a compact amount
-  // means the same thing whether it is displayed or typed.
-  return /k\s*$/i.test(input.trim()) ? value * 1000 : value;
+  // The figure was entered in whatever the column counts in, so 150 in the
+  // rupiah column is 150,000 rupiah.
+  return shown * displayUnit(code);
 }

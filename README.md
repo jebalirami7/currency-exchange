@@ -8,12 +8,11 @@ Every currency has its own field and they all hold the same value at once: type
 an amount into any one of them and the rest update as you type. There is no
 direction to pick and no pair to swap.
 
-A currency marked `compact` in that list is displayed in thousands — the
-rupiah reads `16.2K` rather than `16,239` — since eight digits in a column a
-third of a phone wide are read by counting rather than at a glance. The
-rounding is only ever in the text: the exact value is kept beside it, so
-taking a field over to edit it spells the amount out in full and converts
-from the unrounded figure.
+A currency given a `unit` in that list is both read and entered in it: the
+rupiah column counts thousands, marked by a `K` beside the figure, so 150
+there means 150,000 rupiah and nobody types the three zeros. The rate under
+each figure is stated per displayed unit too, so it multiplies what is on
+screen.
 
 Amounts are entered on a keypad built into the page, so the system keyboard
 never covers the board: the fields carry `inputmode="none"` on a touch device,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatAmount,
-  formatDisplay,
   formatRate,
   formatRelativeTime,
   groupWhileTyping,
@@ -21,21 +20,22 @@ describe('parseAmount', () => {
   it('reads a clean grouping as thousands', () => {
     expect(parseAmount('1,234.56', 'USD')).toBe(1234.56);
     expect(parseAmount('1.234,56', 'USD')).toBe(1234.56);
-    expect(parseAmount('16 000', 'IDR')).toBe(16_000);
-    expect(parseAmount('1,000,000', 'IDR')).toBe(1_000_000);
-    expect(parseAmount('1.234.567', 'IDR')).toBe(1_234_567);
-    // What the app prints for 1 USD in rupiah, typed straight back in.
-    expect(parseAmount('16,239', 'IDR')).toBe(16_239);
-    expect(parseAmount('100.000', 'IDR')).toBe(100_000);
+    expect(parseAmount('2,912', 'USD')).toBe(2912);
+  });
+
+  it('reads the rupiah column as the thousands it counts in', () => {
+    // 150 in that column is a hundred and fifty thousand rupiah.
+    expect(parseAmount('150', 'IDR')).toBe(150_000);
+    expect(parseAmount('2,500', 'IDR')).toBe(2_500_000);
+    expect(parseAmount('16.2', 'IDR')).toBe(16_200);
   });
 
   it('lets the currency settle a lone three-digit group', () => {
     // The dinar is quoted to three decimals, so this is an amount...
     expect(parseAmount('2.912', 'TND')).toBe(2.912);
     expect(parseAmount('2,912', 'TND')).toBe(2.912);
-    // ...while the rupiah has none, so the same digits are thousands.
-    expect(parseAmount('2.912', 'IDR')).toBe(2912);
-    expect(parseAmount('2,912', 'USD')).toBe(2912);
+    // ...while the rupiah column carries one, so the same digits group.
+    expect(parseAmount('2.912', 'IDR')).toBe(2_912_000);
   });
 
   it('keeps a decimal reading where the digits are not a clean grouping', () => {
@@ -59,8 +59,12 @@ describe('parseAmount', () => {
 describe('formatAmount', () => {
   it('uses the precision the currency itself uses', () => {
     expect(formatAmount(1234.5, 'USD')).toBe('1,234.5');
-    expect(formatAmount(20_310_303.88, 'IDR')).toBe('20,310,304');
     expect(formatAmount(2.9117, 'TND')).toBe('2.912');
+  });
+
+  it('counts the rupiah in thousands', () => {
+    expect(formatAmount(16_238.5, 'IDR')).toBe('16.2');
+    expect(formatAmount(20_310_303.88, 'IDR')).toBe('20,310.3');
   });
 
   it('adds precision rather than displaying a small amount as zero', () => {
@@ -73,16 +77,15 @@ describe('formatAmount', () => {
     expect(formatAmount(0, 'USD')).toBe('0');
   });
 
-  it('round-trips back through parseAmount', () => {
-    for (const [amount, code] of [
-      [20_310_303.88, 'IDR'],
-      [16_239, 'IDR'],
-      [1234.5, 'USD'],
-      [2.912, 'TND'],
-      [0.000_179, 'TND'],
+  it('round-trips back through parseAmount, to its displayed precision', () => {
+    for (const [amount, code, places] of [
+      [20_310_000, 'IDR', -3],
+      [16_200, 'IDR', -3],
+      [1234.5, 'USD', 1],
+      [2.912, 'TND', 3],
+      [0.000_179, 'TND', 6],
     ] as const) {
-      const formatted = formatAmount(amount, code);
-      expect(parseAmount(formatted, code)).toBeCloseTo(Number(formatted.replaceAll(',', '')), 10);
+      expect(parseAmount(formatAmount(amount, code), code)).toBeCloseTo(amount, places);
     }
   });
 });
@@ -120,6 +123,10 @@ describe('groupWhileTyping', () => {
     expect(groupWhileTyping('999', 'IDR')).toBe('999');
   });
 
+  it('leaves the rupiah column a decimal place to be typed into', () => {
+    expect(groupWhileTyping('16.2', 'IDR')).toBe('16.2');
+  });
+
   it('leaves a decimal point being typed alone', () => {
     expect(groupWhileTyping('1234.', 'USD')).toBe('1,234.');
     expect(groupWhileTyping('1234.5', 'USD')).toBe('1,234.5');
@@ -144,6 +151,7 @@ describe('groupWhileTyping', () => {
     for (const [typed, code] of [
       ['2500000', 'IDR'],
       ['2.500.000', 'IDR'],
+      ['16.2', 'IDR'],
       ['2,912', 'TND'],
       ['1234,5', 'USD'],
       ['0.500', 'USD'],
@@ -151,28 +159,5 @@ describe('groupWhileTyping', () => {
       const shown = groupWhileTyping(typed, code);
       expect(parseAmount(shown, code)).toBe(parseAmount(typed, code));
     }
-  });
-});
-
-describe('formatDisplay', () => {
-  it('shows a rupiah amount in thousands', () => {
-    expect(formatDisplay(16_238.5, 'IDR')).toBe('16.2K');
-    expect(formatDisplay(557_698, 'IDR')).toBe('557.7K');
-    expect(formatDisplay(2_500_000, 'IDR')).toBe('2,500K');
-  });
-
-  it('leaves an amount below a thousand in full', () => {
-    expect(formatDisplay(999, 'IDR')).toBe('999');
-    expect(formatDisplay(0, 'IDR')).toBe('0');
-  });
-
-  it('leaves currencies that are not counted in millions alone', () => {
-    expect(formatDisplay(16_238.5, 'USD')).toBe('16,238.5');
-    expect(formatDisplay(2.912, 'TND')).toBe('2.912');
-  });
-
-  it('reads its own output back as the thousands it stands for', () => {
-    expect(parseAmount(formatDisplay(2_500_000, 'IDR'), 'IDR')).toBe(2_500_000);
-    expect(parseAmount('16K', 'IDR')).toBe(16_000);
   });
 });

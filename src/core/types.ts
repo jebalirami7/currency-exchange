@@ -7,17 +7,19 @@ export interface Currency {
   /** Full English name, shown beside the code. */
   readonly name: string;
   /**
-   * Decimal places the currency is quoted to. Stated here rather than taken
-   * from `Intl`, whose currency data disagrees across engines — Chromium
-   * gives the rupiah two decimals, Node gives it none.
+   * Decimal places the *displayed* figure carries. Stated here rather than
+   * taken from `Intl`, whose currency data disagrees across engines —
+   * Chromium gives the rupiah two decimals, Node gives it none.
    */
   readonly decimals: number;
   /**
-   * Whether everyday amounts are long enough to be worth showing in
-   * thousands — `16.2K` rather than `16,239`. Set for the rupiah, whose
-   * amounts run to seven and eight digits.
+   * How many of the currency's own units one displayed unit stands for.
+   * The rupiah is both read and entered in thousands, so 1000: the column
+   * shows 150 and means 150,000. Left out, a currency is shown as itself.
    */
-  readonly compact?: boolean;
+  readonly unit?: number;
+  /** Marks that unit beside the figure, e.g. `K`. */
+  readonly unitSuffix?: string;
 }
 
 /**

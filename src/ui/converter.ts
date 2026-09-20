@@ -1,12 +1,6 @@
 import { convert, getRate } from '../core/convert';
-import { CURRENCIES, DEFAULT_CURRENCY, getCurrency } from '../core/currencies';
-import {
-  formatAmount,
-  formatDisplay,
-  formatRate,
-  formatRelativeTime,
-  parseAmount,
-} from '../core/format';
+import { CURRENCIES, DEFAULT_CURRENCY, displayUnit, getCurrency } from '../core/currencies';
+import { formatAmount, formatRate, formatRelativeTime, parseAmount } from '../core/format';
 import type { CurrencyCode, RateSnapshot } from '../core/types';
 import { RateService } from '../rates/rate-service';
 import { createAmountCell, type AmountCell } from './amount-cell';
@@ -82,6 +76,15 @@ export class Converter {
       } else {
         selectOnFirstTap(row.input);
       }
+      // Where the caret is invisible there is nothing to aim at, so every tap
+      // starts a fresh amount rather than dropping the next digits into the
+      // middle of the figure already there.
+      if (this.#keypadOnly) {
+        row.input.addEventListener('pointerdown', () => {
+          this.#replacing = true;
+        });
+      }
+
       row.input.addEventListener('focus', () => {
         this.#replacing = true;
         this.#takeOver(currency.code);
@@ -153,12 +156,9 @@ export class Converter {
         ? rendered.value
         : parseAmount(row.input.value, code);
 
-    // A field being edited shows its amount in full: `16.2K` is for reading,
-    // not for putting a caret into.
+    // Type from the end of the figure that is already there.
     if (this.#amount !== null) {
-      row.input.value = formatAmount(this.#amount, code);
       row.input.setSelectionRange(row.input.value.length, row.input.value.length);
-      fitToColumn(row.input);
     }
 
     this.#error.hidden = true;
@@ -235,9 +235,14 @@ export class Converter {
 
     for (const [code, row] of this.#cells) {
       const isSource = code === this.#source;
+      // Stated per displayed figure, so it multiplies what is on screen: a
+      // thousand-rupiah column takes a thousandth of the rate per rupiah.
       row.rate.textContent = isSource
         ? ''
-        : `× ${formatRate(getRate(snapshot, this.#source, code))}`;
+        : `× ${formatRate(
+            (getRate(snapshot, this.#source, code) * displayUnit(this.#source)) /
+              displayUnit(code),
+          )}`;
 
       // Never overwrite what the user is editing, or a field they are sitting
       // in — a background refresh would otherwise move the caret out from
@@ -255,7 +260,7 @@ export class Converter {
       }
 
       const value = convert(this.#amount, snapshot, this.#source, code);
-      const next = formatDisplay(value, code);
+      const next = formatAmount(value, code);
       this.#rendered.set(code, { text: next, value });
 
       if (row.input.value !== next) {
