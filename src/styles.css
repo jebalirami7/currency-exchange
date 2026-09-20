@@ -79,7 +79,9 @@ body {
   justify-content: center;
   justify-content: safe center;
   padding-inline: 16px;
-  padding-block: clamp(16px, 4vh, 40px);
+  /* Airy above, tight below: the keys are meant to reach the bottom edge,
+     clearing only the home indicator on a phone that has one. */
+  padding-block: clamp(16px, 4vh, 40px) max(10px, env(safe-area-inset-bottom, 0px));
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
@@ -91,10 +93,11 @@ body {
 
 .board {
   width: min(100%, 420px);
-  /* Takes the height it is given, so the keypad can sit at the bottom of it,
-     and stops growing on a large monitor rather than stretching forever. */
+  /* Takes all the height it is given, so the keypad reaches the bottom of the
+     screen. Capping it here would strand the keys short of the edge on a tall
+     phone; what stops it stretching on a desktop is the rule further down,
+     which takes the board off the stretch entirely past 640px. */
   flex: 1 1 auto;
-  max-height: 820px;
   display: flex;
   flex-direction: column;
 }
