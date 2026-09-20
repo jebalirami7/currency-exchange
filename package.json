@@ -1,0 +1,21 @@
+{
+  "name": "currency-exchange",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Real-time currency converter for IDR, USD and TND.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "happy-dom": "^15.11.6",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}
